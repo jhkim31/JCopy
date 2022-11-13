@@ -1,0 +1,39 @@
+syntax = "proto3";
+
+message Empty {}
+
+message CreateRoomRequest {
+    string clientSession = 1;
+    string expireTime = 2;      // Date str
+}
+
+message CreateRoomResponse {
+    int32 roomId = 1;
+    string textId = 2;
+    repeated string fileId = 3;
+}
+
+message CreateTextRequest {
+    string expireTime = 1;      // Date str
+}
+
+message CreateTextResponse {
+    string textId = 1;
+}
+
+message GetTextRequest {
+    string textId = 1;
+}
+
+message GetTextResponse {
+    string textValue = 1;
+}
+
+service RoomService {
+    rpc CreateRoom (CreateRoomRequest) returns (CreateRoomResponse){};
+}
+
+service StorageService {
+    rpc CreateText (CreateTextRequest) returns (CreateTextResponse){};
+    rpc GetText (GetTextRequest) returns (GetTextResponse){};
+}
