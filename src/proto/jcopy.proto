@@ -8,9 +8,21 @@ message CreateRoomRequest {
 }
 
 message CreateRoomResponse {
-    int32 roomId = 1;
+    string roomId = 1;
     string textId = 2;
-    repeated string fileId = 3;
+    repeated string fileIds = 3;
+}
+
+message JoinRoomRequest {
+    string clientSession = 1;
+    string roomId = 2;
+}
+
+message JoinRoomResponse {
+    string result = 1;
+    string roomId = 2;
+    string textId = 3;
+    repeated string fileIds = 4;
 }
 
 message CreateTextRequest {
@@ -31,6 +43,7 @@ message GetTextResponse {
 
 service RoomService {
     rpc CreateRoom (CreateRoomRequest) returns (CreateRoomResponse){};
+    rpc JoinRoom (JoinRoomRequest) returns (JoinRoomResponse){};
 }
 
 service StorageService {
