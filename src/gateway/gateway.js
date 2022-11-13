@@ -69,11 +69,9 @@ Express.post("/room", (req, res) => {
         } else {
             console.log("room id : ", CreateRoomResponse.roomId);
             console.log('text id : ', CreateRoomResponse.textId);
-            console.log('file id : ', CreateRoomResponse.fileId);
+            console.log('file ids : ', CreateRoomResponse.fileIds);
 
             gRPCStorageServiceClient.GetText({textId: CreateRoomResponse.textId}, (error, getTextResponse) => {
-                console.log(error)
-                console.log(getTextResponse)
                 res.send({
                     room: CreateRoomResponse.roomId,
                     text : {
@@ -86,6 +84,30 @@ Express.post("/room", (req, res) => {
         }
     });
 });
+
+Express.post("/joinroom", (req, res) => {
+    console.log(req.session.cookie)
+    console.log(new Date(req.session.cookie._expires))
+    const JoinRoomRequest = {
+        clientSession: req.session.id ,
+        roomId: req.query.roomId
+    }
+    console.log(req.query.roomId)
+    gRPCRoomServiceClient.JoinRoom(JoinRoomRequest, (error, JoinRoomResponse) => {
+        console.log(JoinRoomResponse)
+
+        gRPCStorageServiceClient.GetText({textId: JoinRoomResponse.textId}, (error, GetTextResponse) => {
+            res.send({
+                room: JoinRoomResponse.roomId,
+                text : {
+                    id : JoinRoomResponse.textId,
+                    value : GetTextResponse.textValue
+                }
+            })
+        })
+
+    })
+})
 
 
 Express.get("/room/*", (req, res) => {

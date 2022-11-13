@@ -34,10 +34,10 @@ mongoose
     });
 
 const RoomSchema = new mongoose.Schema({
-    id: Number,
+    roomId: String,
     sessions: [String],
-    text: String,
-    storages: [String],
+    textId: String,
+    fildIds: [String],
     expireAt: {type: Date, expires: 100},
     expireTime: Date,
 });
@@ -47,7 +47,7 @@ const Room = mongoose.model("Room", RoomSchema);
 gRPCServer.addService(RoomProto.RoomService.service, {
     CreateRoom: async (CreateRoomRequest, responseCallBack) => {
         try {
-            const roomId = parseInt(Math.random() * 10000);
+            const roomId = parseInt(Math.random() * 10000).toString().padStart(4, '0')
 
             const CreateTextRequest = {
                 expireTime: CreateRoomRequest.request.expireTime,
@@ -57,10 +57,10 @@ gRPCServer.addService(RoomProto.RoomService.service, {
                 const textId = CreateTextResponse.textId;
 
                 const room = new Room({
-                    id: roomId,
+                    roomId: roomId,
                     sessions: [CreateRoomRequest.request.clientSession],
-                    storages: [],
-                    text: textId,
+                    textId: textId,
+                    fileIds: [],
                     expireAt: new Date(CreateRoomRequest.request.expireTime),
                     expireTime: new Date(CreateRoomRequest.request.expireTime),
                 });
@@ -71,7 +71,7 @@ gRPCServer.addService(RoomProto.RoomService.service, {
                 const CreateRoomResponse = {
                     roomId: roomId,
                     textId: textId,
-                    fileId: [],
+                    fileIds: [],
                 };
                 responseCallBack(null, CreateRoomResponse);
             });
@@ -79,6 +79,21 @@ gRPCServer.addService(RoomProto.RoomService.service, {
             responseCallBack(error, null);
         }
     },
+    JoinRoom: async (JoinRoomRequest, responseCallBack) => {
+
+        const roomId = JoinRoomRequest.request.roomId;
+        const clientSession = JoinRoomRequest.request.clientSession;
+        await Room.updateOne({roomId: roomId}, {$addToSet: { sessions:  clientSession}});
+        const room = await Room.findOne({roomId: roomId})
+        const JoinRoomResponse = {
+            result: "ok",
+            roomId : roomId,
+            textId: room.textId,
+            fileIds : room.fileIds
+        }
+        console.log(JoinRoomResponse)
+        responseCallBack(null, JoinRoomResponse)
+    }
 });
 
 //start the Server

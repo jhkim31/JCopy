@@ -1,5 +1,5 @@
 import React, {useState} from "react";
-import {BrowserRouter, Routes, Route, redirect, useNavigate} from "react-router-dom";
+import {BrowserRouter, Routes, Route, redirect, useNavigate, useLocation} from "react-router-dom";
 import "./App.css";
 import styled from "styled-components";
 import {FileUploader} from "react-drag-drop-files";
@@ -56,7 +56,14 @@ function App() {
 function Home() {
     const navigate = useNavigate();
     async function createRoom() {
-        return navigate("/room/1234");
+        return navigate(`/room/${1234}`, {state : {param1: 123, param2 : 456}});
+        // fetch('/room', {method: "POST"})
+        // .then(d => d.json())
+        // .then(d => {
+        //     console.log(d);
+
+        // })
+
     }
 
     async function joinRoom() {
@@ -71,6 +78,8 @@ function Home() {
 }
 
 function RoomComponent() {
+    const location = useLocation();
+    console.log(location)
     const fileTypes = ["JPG", "PNG", "GIF"];
     const [file, setFile] = useState<File>();
     const [fileList, setFileList] = useState<File[]>([])
