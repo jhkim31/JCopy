@@ -33,6 +33,16 @@ message CreateTextResponse {
     string textId = 1;
 }
 
+message GetJoinedSessionsRequest {
+    string textId = 1;
+    string clientSession = 2;
+}
+
+message GetJoinedSessionsResponse {
+    string roomId = 1;
+    repeated string clientSessions = 2;
+}
+
 message GetTextRequest {
     string textId = 1;
 }
@@ -41,12 +51,24 @@ message GetTextResponse {
     string textValue = 1;
 }
 
+message GetFilesRequest {
+    string textId = 1;
+    repeated string fileIds = 2;
+}
+
+message GetFilesResponse {
+    string textValue = 1;
+    repeated string fileNames = 2;
+}
+
 service RoomService {
     rpc CreateRoom (CreateRoomRequest) returns (CreateRoomResponse){};
     rpc JoinRoom (JoinRoomRequest) returns (JoinRoomResponse){};
+    rpc GetJoinedSessions (GetJoinedSessionsRequest) returns (GetJoinedSessionsResponse){};
 }
 
 service StorageService {
     rpc CreateText (CreateTextRequest) returns (CreateTextResponse){};
+    rpc GetFiles (GetFilesRequest) returns (GetFilesResponse){};
     rpc GetText (GetTextRequest) returns (GetTextResponse){};
 }
