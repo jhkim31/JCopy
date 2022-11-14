@@ -11,6 +11,7 @@
   "dependencies": {
     "@grpc/grpc-js": "^1.7.3",
     "@grpc/proto-loader": "^0.7.3",
+    "kafka-node": "^5.0.0",
     "redis": "^4.5.0",
     "uuid": "^9.0.0"
   }

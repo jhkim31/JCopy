@@ -1,4 +1,4 @@
-import React, {useState} from "react";
+import React, {useEffect, useState} from "react";
 import {BrowserRouter, Routes, Route, redirect, useNavigate, useLocation} from "react-router-dom";
 import "./App.css";
 import styled from "styled-components";
@@ -39,14 +39,14 @@ const TextField = styled.textarea`
 `;
 
 function App() {
-    const ws = new WebSocket('ws://localhost:3000');
+    const ws = new WebSocket("ws://localhost:3000");
     return (
         <Main>
             <BrowserRouter>
                 <Routes>
                     <Route path="/home" element={<Home />} />
                     <Route path="/joinroom" element={<JoinRoom />} />
-                    <Route path="/room/*" element={<RoomComponent />} />
+                    <Route path="/room/*" element={<RoomComponent ws={ws}/>} />
                 </Routes>
             </BrowserRouter>
         </Main>
@@ -56,14 +56,14 @@ function App() {
 function Home() {
     const navigate = useNavigate();
     async function createRoom() {
-        return navigate(`/room/${1234}`, {state : {param1: 123, param2 : 456}});
-        // fetch('/room', {method: "POST"})
-        // .then(d => d.json())
-        // .then(d => {
-        //     console.log(d);
+        fetch("/room", {method: "POST"})
+            .then((d) => d.json())
+            .then((d) => {
 
-        // })
-
+                const roomInfo = d;
+                return navigate(`/room/${d.roomId}`, {state: roomInfo});
+            });
+        // return navigate(`/room/1234`, {state: {}});
     }
 
     async function joinRoom() {
@@ -77,29 +77,65 @@ function Home() {
     );
 }
 
-function RoomComponent() {
+function RoomComponent(props: {ws: WebSocket}) {
     const location = useLocation();
-    console.log(location)
+    const ws = props.ws;
     const fileTypes = ["JPG", "PNG", "GIF"];
-    const [file, setFile] = useState<File>();
-    const [fileList, setFileList] = useState<File[]>([])
+    const [text, setText] = useState([location.state.text.value, true]);
+    const [localText, setLocalText] = useState(location.state.text.value);
+
+
+    useEffect(() => {
+        setInterval(() => {
+            if (text[1]){
+                const msg = {
+                    textId: location.state.text.id,
+                    textValue: text[0]
+                }
+                ws.send(JSON.stringify(msg));
+                setText(prevText => {
+                    prevText[1] = false;
+                    return prevText;
+                });
+            }
+        }, 1000);
+
+        ws.onmessage = (evt) => {
+            setLocalText(evt.data);
+            setText(prevText => {
+                prevText[0] = evt.data;
+                prevText[1] = false;
+                return prevText;
+            });
+
+        }
+    }, [])
+
+    const [fileList, setFileList] = useState<File[]>([]);
+
+    function textHandler(e: React.ChangeEvent<HTMLTextAreaElement>){
+        setLocalText(e.target.value);
+        setText(prevText => {
+            prevText[0] = e.target.value;
+            prevText[1] = true;
+            return prevText
+        });
+    }
+
     const handleChange = (file: File) => {
-        setFile(file);
-        setFileList(prev => {
-            prev.push(file)
-            return prev
-        })
+        setFileList((prev) => {
+            prev.push(file);
+            return prev;
+        });
     };
     return (
         <Room>
-            <RoomID>ID : 1234</RoomID>
-            <TextField></TextField>
-            <div id = "fileList">
-                {
-                    fileList.map(item => {
-                        return <div key={Math.random()}>{item.toString()}</div>
-                    })
-                }
+            <RoomID>{location.state.roomId}</RoomID>
+            <TextField onChange={textHandler} value={localText}/>
+            <div id="fileList">
+                {fileList.map((item) => {
+                    return <div key={Math.random()}>{item.toString()}</div>;
+                })}
             </div>
             <FileUploader handleChange={handleChange} name="file" types={fileTypes} />
         </Room>
@@ -108,12 +144,23 @@ function RoomComponent() {
 
 function JoinRoom() {
     const navigate = useNavigate();
+    const [roomId, setRoomId] = useState("");
+
+    function inputHandler(e: React.ChangeEvent<HTMLInputElement>) {
+        setRoomId(e.target.value);
+    }
     async function joinRoom() {
-        return navigate("/room/1234");
+        fetch(`/joinroom?roomId=${roomId}`, {method: "POST"})
+            .then((d) => d.json())
+            .then((d) => {
+                const state = d;
+                return navigate(`/room/${d.roomId}`, {state: state});
+            });
+        // return navigate(`/room/1234`, {state: {}});
     }
     return (
         <div>
-            <input type="text"></input>
+            <input type="text" value={roomId} onChange={inputHandler}></input>
             <button onClick={joinRoom}>join!</button>
         </div>
     );

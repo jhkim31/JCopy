@@ -27,10 +27,10 @@ const dbUrl = "mongodb://jhkim:asdf1346@localhost:27017";
 mongoose
     .connect(dbUrl, {dbName: "test"})
     .then((e) => {
-        console.log("connect!");
+
     })
     .catch((e) => {
-        console.log("error!");
+
     });
 
 const RoomSchema = new mongoose.Schema({
@@ -66,7 +66,7 @@ gRPCServer.addService(RoomProto.RoomService.service, {
                 });
 
                 await room.save().then((d) => {
-                    console.log("저장 완료!");
+
                 });
                 const CreateRoomResponse = {
                     roomId: roomId,
@@ -91,8 +91,24 @@ gRPCServer.addService(RoomProto.RoomService.service, {
             textId: room.textId,
             fileIds : room.fileIds
         }
-        console.log(JoinRoomResponse)
+
         responseCallBack(null, JoinRoomResponse)
+    },
+    GetJoinedSessions: async(GetJoinedSessionsRequest, responseCallBack) => {
+        try{
+            const textId = GetJoinedSessionsRequest.request.textId;
+            const clientSession = GetJoinedSessionsRequest.request.clientSession;
+
+            const room = await Room.findOne({textId: textId, sessions: clientSession});
+
+            const GetJoinedSessionsResponse = {
+                roomId: room.roomId,
+                clientSessions: room.sessions
+            }
+            responseCallBack(null, GetJoinedSessionsResponse);
+        } catch(error) {
+
+        }
     }
 });
 
