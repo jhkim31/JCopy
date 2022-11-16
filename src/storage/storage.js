@@ -8,9 +8,9 @@ var Consumer = kafka.Consumer;
 var Producer = kafka.Producer;
 
 var kafkaClient = new kafka.KafkaClient();
-var producer = new Producer(kafkaClient)
+var producer = new Producer(kafkaClient);
 var consumer = new Consumer(kafkaClient, [{topic: "ChangeText", partition: 0}], {
-    autoCommit: true,
+    autoCommit: false,
 });
 
 const redisClient = createClient("redis://localhost:6379");
@@ -41,7 +41,6 @@ gRPCServer.addService(StorageProto.StorageService.service, {
             };
             responseCallBack(null, CreateTextResponse);
         } catch (error) {
-
             responseCallBack(error, null);
         }
     },
@@ -69,30 +68,30 @@ gRPCServer.addService(StorageProto.StorageService.service, {
                 fileNames: fileNames,
             };
             responseCallBack(null, GetFilesResponse);
-        } catch (error) {
-
-        }
-    }
+        } catch (error) {}
+    },
 });
 
 consumer.on("message", async (message) => {
+    console.log("메시지 수신 : ", message.value);
     try {
         const msg = JSON.parse(message.value);
         if (message.topic == "ChangeText") {
             await redisClient.set(msg.textId, msg.textValue, {KEEPTTL: true});
-            const kafkaMsg = { topic: 'TextChanged', messages: JSON.stringify({textId: msg.textId, textValue: msg.textValue, clientSession: msg.clientSession}), partition: 0 };
+            const kafkaMsg = {
+                topic: "TextChanged",
+                messages: JSON.stringify({textId: msg.textId, textValue: msg.textValue, clientSession: msg.clientSession}),
+                partition: 0,
+            };
             producer.send([kafkaMsg], (err, res) => {
-                if (err){
-                    console.log("textChanged Error")
+                if (err) {
+                    console.log("textChanged Error");
                 } else {
-                    console.log("TextChanged OK")
+                    console.log("TextChanged OK");
                 }
-
             });
         }
-    } catch (e) {
-
-    }
+    } catch (e) {}
 });
 
 //start the Server

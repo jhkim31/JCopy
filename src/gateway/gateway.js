@@ -63,6 +63,16 @@ Express.get("/home", (req, res) => {
     res.sendFile(__dirname + "/index.html");
 });
 
+Express.get("/joinroom", (req, res) => {
+    var session = req.session;
+    if (session?.wsID == undefined) {
+        session.wsID = session.id;
+    }
+    console.log('joinroom!!');
+
+    res.sendFile(__dirname + "/index.html");
+});
+
 Express.post("/room", (req, res) => {
 
     const CreateRoomRequest = {
@@ -115,6 +125,10 @@ Express.post("/joinroom", (req, res) => {
 });
 
 Express.get("/room/*", (req, res) => {
+
+    if (session?.wsID == undefined) {
+        res.redirect('/joinroom');
+    }
 
     res.sendFile(__dirname + "/index.html");
 });
