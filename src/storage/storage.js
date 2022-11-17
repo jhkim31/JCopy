@@ -1,23 +1,42 @@
+const develop = process.argv[2];
+
+const YAML = require("yaml");
+const fs = require("fs");
+
 const grpc = require("@grpc/grpc-js");
 const protoLoader = require("@grpc/proto-loader");
 const {v4: uuidv4} = require("uuid");
 const {createClient} = require("redis");
 
-const kafka = require("kafka-node");
-var Consumer = kafka.Consumer;
-var Producer = kafka.Producer;
+var config = {};
+if (develop == 'develop') {
+    const file = fs.readFileSync("../config.yaml", "utf8");
+    console.log(file);
+    config = YAML.parse(file).develop;
+} else {
+    const file = fs.readFileSync("./config.yaml", "utf8");
+    console.log(file);
+    config = YAML.parse(file).deploy;
+}
 
-var kafkaClient = new kafka.KafkaClient();
-var producer = new Producer(kafkaClient);
-var consumer = new Consumer(kafkaClient, [{topic: "ChangeText", partition: 0}], {
-    autoCommit: false,
+
+var {Kafka, Partitioners} = require("kafkajs");
+const kafka = new Kafka({
+    brokers: config.kafka.brokers,
 });
+const producer = kafka.producer({createPartitioner: Partitioners.LegacyPartitioner});
+const consumer = kafka.consumer({groupId: config.kafka.groupid.storage});
 
-const redisClient = createClient("redis://localhost:6379");
+(async () => {
+    await producer.connect();
+    await consumer.connect();
+})();
+
+const redisClient = createClient(`redis://${config.redis.host}:${config.redis.port}`);
 
 redisClient.connect();
 
-const PROTO_FILE = __dirname + "/../proto/jcopy.proto";
+const PROTO_FILE =  config.grpc.proto.path;
 const options = {
     keepCase: true,
     longs: String,
@@ -72,29 +91,31 @@ gRPCServer.addService(StorageProto.StorageService.service, {
     },
 });
 
-consumer.on("message", async (message) => {
-    console.log("메시지 수신 : ", message.value);
-    try {
-        const msg = JSON.parse(message.value);
-        if (message.topic == "ChangeText") {
-            await redisClient.set(msg.textId, msg.textValue, {KEEPTTL: true});
-            const kafkaMsg = {
-                topic: "TextChanged",
-                messages: JSON.stringify({textId: msg.textId, textValue: msg.textValue, clientSession: msg.clientSession}),
-                partition: 0,
-            };
-            producer.send([kafkaMsg], (err, res) => {
-                if (err) {
-                    console.log("textChanged Error");
-                } else {
-                    console.log("TextChanged OK");
-                }
-            });
-        }
-    } catch (e) {}
-});
+async function kafkaConsumerListener() {
+    await consumer.subscribe({topics: ["ChangeText"]});
+    await consumer.run({
+        eachMessage: async ({topic, partition, message, heartbeat, pause}) => {
+            const msg = JSON.parse(message.value.toString());
 
-//start the Server
-gRPCServer.bindAsync("127.0.0.1:5001", grpc.ServerCredentials.createInsecure(), (error, port) => {
+            if (topic == "ChangeText") {
+                await redisClient.set(msg.textId, msg.textValue, {KEEPTTL: true});
+                const kafkaMsg = {
+                    topic: "TextChanged",
+                    messages: [
+                        {
+                            value: JSON.stringify({textId: msg.textId, textValue: msg.textValue, clientSession: msg.clientSession}),
+                        },
+                    ],
+                };
+                await producer.send(kafkaMsg);
+                console.log('send Storage : ', kafkaMsg);
+            }
+        },
+    });
+}
+
+kafkaConsumerListener();
+
+gRPCServer.bindAsync("0.0.0.0:5001", grpc.ServerCredentials.createInsecure(), (error, port) => {
     gRPCServer.start();
 });

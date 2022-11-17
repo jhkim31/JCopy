@@ -1,0 +1,29 @@
+name: Deploy Test
+
+on:
+  push:
+    branches: 
+      - master
+
+jobs:
+  build-test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+
+      - name: Login to Dockerhub
+        uses: docker/login-action@v1
+        with:
+          username: ${{secrets.DOCKERHUB_USERNAME}}
+          password: ${{secrets.DOCKERHUB_TOKEN}}
+
+      - name: gateway Test
+        uses: docker/build-push-action@v2
+        with:
+          context: .
+          file: ./src/gateway/Dockerfile
+          tags: jhkimdocker/testimage:v4
+          push: true
+
+      

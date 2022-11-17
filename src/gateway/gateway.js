@@ -1,3 +1,8 @@
+const develop = process.argv[2];
+console.log(develop);
+const YAML = require("yaml");
+const fs = require("fs");
+
 const express = require("express");
 const session = require("express-session");
 var RedisStore = require("connect-redis")(session);
@@ -9,20 +14,34 @@ const {v4: uuidv4} = require("uuid");
 const grpc = require("@grpc/grpc-js");
 const protoLoader = require("@grpc/proto-loader");
 
-var kafka = require("kafka-node");
-var Producer = kafka.Producer;
-var kafkaClient = new kafka.KafkaClient();
-var producer = new Producer(kafkaClient);
+var config = null;
+if (develop == 'develop') {
+    const file = fs.readFileSync("../config.yaml", "utf8");
+    console.log(file);
+    config = YAML.parse(file).develop;
+} else {
+    const file = fs.readFileSync("./config.yaml", "utf8");
+    console.log(file);
+    config = YAML.parse(file).deploy;
+}
+console.log(config);
 
-var Consumer = kafka.Consumer;
-var consumer = new Consumer(kafkaClient, [{topic: "TextChanged", partition: 0}], {
-    autoCommit: true,
+var {Kafka, Partitioners} = require("kafkajs");
+const kafka = new Kafka({
+    brokers: config.kafka.brokers,
 });
+const producer = kafka.producer({createPartitioner: Partitioners.LegacyPartitioner});
+const consumer = kafka.consumer({groupId: config.kafka.groupid.gateway});
 
-const redisClient = createClient({url: "redis://localhost:6379", legacyMode: true});
+(async () => {
+    await producer.connect();
+    await consumer.connect();
+})();
+
+const redisClient = createClient({url: `redis://${config.redis.host}:${config.redis.port}`, legacyMode: true});
 redisClient.connect();
 
-const PROTO_FILE = __dirname + "/../proto/jcopy.proto";
+const PROTO_FILE = config.grpc.proto.path;
 
 const options = {
     keepCase: true,
@@ -35,17 +54,24 @@ const options = {
 const pkgDefs = protoLoader.loadSync(PROTO_FILE, options);
 const RoomService = grpc.loadPackageDefinition(pkgDefs).RoomService;
 const StorageService = grpc.loadPackageDefinition(pkgDefs).StorageService;
-const gRPCRoomServiceClient = new RoomService("localhost:5000", grpc.credentials.createInsecure());
-const gRPCStorageServiceClient = new StorageService("localhost:5001", grpc.credentials.createInsecure());
+
+const gRPCRoomServiceClient = new RoomService(
+    `${config.grpc.RoomService.host}:${config.grpc.RoomService.port}`,
+    grpc.credentials.createInsecure()
+);
+const gRPCStorageServiceClient = new StorageService(
+    `${config.grpc.StorageService.host}:${config.grpc.StorageService.port}`,
+    grpc.credentials.createInsecure()
+);
 
 const Express = express();
 
-Express.use(express.static(__dirname + "/build"));
+Express.use(express.static("./build"));
 
 Express.use(
     session({
         store: new RedisStore({client: redisClient}),
-        secret: "Rs89I67YEA55cLMgi0t6oyr8568e6KtD",
+        secret: uuidv4(),
         resave: false,
         saveUninitialized: true,
         cookie: {
@@ -60,7 +86,7 @@ Express.get("/home", (req, res) => {
         session.wsID = session.id;
     }
 
-    res.sendFile(__dirname + "/index.html");
+    res.sendFile("index.html", { root: '.' });
 });
 
 Express.get("/joinroom", (req, res) => {
@@ -68,13 +94,11 @@ Express.get("/joinroom", (req, res) => {
     if (session?.wsID == undefined) {
         session.wsID = session.id;
     }
-    console.log('joinroom!!');
 
-    res.sendFile(__dirname + "/index.html");
+    res.sendFile("index.html", { root: '.' });
 });
 
 Express.post("/room", (req, res) => {
-
     const CreateRoomRequest = {
         clientSession: req.session.id,
         expireTime: req.session.cookie._expires,
@@ -82,9 +106,7 @@ Express.post("/room", (req, res) => {
 
     gRPCRoomServiceClient.CreateRoom(CreateRoomRequest, (error, CreateRoomResponse) => {
         if (error) {
-
         } else {
-
             gRPCStorageServiceClient.GetText({textId: CreateRoomResponse.textId}, (error, getTextResponse) => {
                 res.send({
                     roomId: CreateRoomResponse.roomId,
@@ -99,15 +121,12 @@ Express.post("/room", (req, res) => {
 });
 
 Express.post("/joinroom", (req, res) => {
-
     const JoinRoomRequest = {
         clientSession: req.session.id,
         roomId: req.query.roomId,
     };
 
     gRPCRoomServiceClient.JoinRoom(JoinRoomRequest, (error, JoinRoomResponse) => {
-
-
         gRPCStorageServiceClient.GetFiles(
             {textId: JoinRoomResponse.textId, fileIds: JoinRoomResponse.fileIds},
             (error, GetFilesResponse) => {
@@ -125,16 +144,14 @@ Express.post("/joinroom", (req, res) => {
 });
 
 Express.get("/room/*", (req, res) => {
-
     if (session?.wsID == undefined) {
-        res.redirect('/joinroom');
+        res.redirect("/joinroom");
     }
 
-    res.sendFile(__dirname + "/index.html");
+    res.sendFile("/index.html", { root: '.' });
 });
 
 Express.get("*", function (req, res) {
-
     res.status(404).redirect("/home");
 });
 
@@ -157,9 +174,7 @@ WSServer.on("connection", async (ws, request) => {
         }
     }
 
-    console.log(`현재 모든 웹소켓 : ${Object.keys(connectedWebsockets)}`);
-
-    ws.on("message", (msg) => {
+    ws.on("message", async (msg) => {
         const wsMsg = JSON.parse(msg);
         const kafkaMsg = {
             textId: wsMsg.textId,
@@ -167,42 +182,34 @@ WSServer.on("connection", async (ws, request) => {
             clientSession: ws.id,
         };
 
-        data = {topic: "ChangeText", messages: JSON.stringify(kafkaMsg), partition: 0};
+        data = {topic: "ChangeText", messages: [{value: JSON.stringify(kafkaMsg)}]};
 
-        producer.send([data], (err, res) => {
-            if (err){
-                console.log("ChangeText Error")
-            } else {
-                console.log("ChangeText OK")
-            }
-        });
+        await producer.send(data);
     });
 });
 
-consumer.on("message", async (message) => {
-    console.log("TextChanged 이벤트", message);
-    try {
-        const msg = JSON.parse(message.value);
-        if (message.topic == "TextChanged") {
-            const GetJoinedSessionsRequest = {
-                textId: msg.textId,
-                clientSession: msg.clientSession
-            }
-            console.log('메시지 바꾼 세션 : ', msg.clientSession)
-            gRPCRoomServiceClient.GetJoinedSessions(GetJoinedSessionsRequest, (error, GetJoinedSessionsResponse) => {
+async function kafkaConsumerListener() {
+    await consumer.subscribe({topics: ["TextChanged"]});
+    await consumer.run({
+        eachMessage: async ({topic, partition, message, heartbeat, pause}) => {
+            const msg = JSON.parse(message.value.toString());
 
-
-                for (const sessionId of GetJoinedSessionsResponse.clientSessions){
-                    if (msg.clientSession != sessionId){
-                        console.log('전송할 세션 : ', sessionId)
-                        const ws = connectedWebsockets[sessionId];
-                        ws.send(msg.textValue);
+            if (topic == "TextChanged") {
+                const GetJoinedSessionsRequest = {
+                    textId: msg.textId,
+                    clientSession: msg.clientSession,
+                };
+                gRPCRoomServiceClient.GetJoinedSessions(GetJoinedSessionsRequest, (error, GetJoinedSessionsResponse) => {
+                    for (const sessionId of GetJoinedSessionsResponse.clientSessions) {
+                        if (msg.clientSession != sessionId) {
+                            const ws = connectedWebsockets[sessionId];
+                            ws.send(msg.textValue);
+                        }
                     }
-                }
+                });
+            }
+        },
+    });
+}
 
-            });
-        }
-    } catch (e) {
-
-    }
-});
+kafkaConsumerListener();
