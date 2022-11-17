@@ -11,6 +11,7 @@
   "dependencies": {
     "@grpc/grpc-js": "^1.7.3",
     "@grpc/proto-loader": "^0.7.3",
-    "mongoose": "^6.7.2"
+    "mongoose": "^6.7.2",
+    "yaml": "^2.1.3"
   }
 }

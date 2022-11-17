@@ -1,10 +1,25 @@
+const develop = process.argv[2];
+
+const YAML = require("yaml");
+const fs = require("fs");
+
 const mongoose = require("mongoose");
 const grpc = require("@grpc/grpc-js");
 const protoLoader = require("@grpc/proto-loader");
 
-//path to our proto file
-const PROTO_FILE = __dirname + "/../proto/jcopy.proto";
-//options needed for loading Proto file
+var config = {};
+if (develop == 'develop') {
+    const file = fs.readFileSync("../config.yaml", "utf8");
+    console.log(file);
+    config = YAML.parse(file).develop;
+} else {
+    const file = fs.readFileSync("./config.yaml", "utf8");
+    console.log(file);
+    config = YAML.parse(file).deploy;
+}
+
+const PROTO_FILE = config.grpc.proto.path;
+
 const options = {
     keepCase: true,
     longs: String,
@@ -20,17 +35,17 @@ const RoomProto = grpc.loadPackageDefinition(pkgDefs);
 const StorageService = grpc.loadPackageDefinition(pkgDefs).StorageService;
 
 const gRPCServer = new grpc.Server();
-const gRPCClient = new StorageService("localhost:5001", grpc.credentials.createInsecure());
+const gRPCClient = new StorageService(`${config.grpc.StorageService.host}:${config.grpc.StorageService.port}`, grpc.credentials.createInsecure());
 
-const dbUrl = "mongodb://jhkim:asdf1346@localhost:27017";
+const dbUrl = `mongodb://${config.mongodb.user}:${config.mongodb.pwd}@${config.mongodb.host}:${config.mongodb.port}`;
 
 mongoose
-    .connect(dbUrl, {dbName: "test"})
+    .connect(dbUrl, {dbName: config.mongodb.dbName})
     .then((e) => {
-
+        console.log('ok')
     })
     .catch((e) => {
-
+        console.log('mongo error')
     });
 
 const RoomSchema = new mongoose.Schema({
@@ -46,6 +61,7 @@ const Room = mongoose.model("Room", RoomSchema);
 
 gRPCServer.addService(RoomProto.RoomService.service, {
     CreateRoom: async (CreateRoomRequest, responseCallBack) => {
+        console.log(CreateRoomRequest);
         try {
             const roomId = parseInt(Math.random() * 10000).toString().padStart(4, '0')
 
@@ -113,7 +129,7 @@ gRPCServer.addService(RoomProto.RoomService.service, {
 });
 
 //start the Server
-gRPCServer.bindAsync("127.0.0.1:5000", grpc.ServerCredentials.createInsecure(), (error, port) => {
+gRPCServer.bindAsync("0.0.0.0:5000", grpc.ServerCredentials.createInsecure(), (error, port) => {
     console.log(`listening on port ${port}`);
     gRPCServer.start();
 });
