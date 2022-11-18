@@ -1,4 +1,4 @@
-name: Deploy Test
+name: ALL Container Deploy Hub
 
 on:
   push:
@@ -23,7 +23,22 @@ jobs:
         with:
           context: .
           file: ./src/gateway/Dockerfile
-          tags: jhkimdocker/testimage:v4
+          tags: jhkimdocker/jcopy-gateway:v4.0.1
+          push: true
+      
+      - name: room test
+        uses: docker/build-push-action@v2
+        with:
+          context: .
+          file: ./src/room/Dockerfile
+          tags: jhkimdocker/jcopy-room:v4.0.1
           push: true
 
+      - name: storage Test
+        uses: docker/build-push-action@v2
+        with:
+          context: .
+          file: ./src/storage/Dockerfile
+          tags: jhkimdocker/jcopy-storage:v4.0.3
+          push: true
       
