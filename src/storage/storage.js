@@ -32,7 +32,8 @@ const consumer = kafka.consumer({groupId: config.kafka.groupid.storage});
     await consumer.connect();
 })();
 
-const redisClient = createClient(`redis://${config.redis.host}:${config.redis.port}`);
+const redisUrl = `redis://${config.redis.host}:${config.redis.port}`;
+const redisClient = createClient({url: redisUrl, legacyMode: true});
 
 redisClient.connect();
 

@@ -16,6 +16,7 @@
     "express-session": "^1.17.3",
     "kafka-node": "^5.0.0",
     "kafkajs": "^2.2.2",
+    "mongoose": "^6.7.2",
     "redis": "^4.5.0",
     "uuid": "^9.0.0",
     "ws": "^8.11.0",
