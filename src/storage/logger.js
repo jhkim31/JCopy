@@ -68,7 +68,7 @@ const logger = winston.createLogger({
             level: "info", // info 레벨에선
             datePattern: "YYYY-MM-DD", // 파일 날짜 형식
             dirname: logDir, // 파일 경로
-            filename: `%DATE%.log`, // 파일 이름
+            filename: `%DATE%.storage.log`, // 파일 이름
             maxFiles: 30, // 최근 30일치 로그 파일을 남김
             zippedArchive: true, // 아카이브된 로그 파일을 gzip으로 압축할지 여부
         }),
@@ -77,25 +77,36 @@ const logger = winston.createLogger({
             level: "error", // error 레벨에선
             datePattern: "YYYY-MM-DD",
             dirname: errDir, // /logs/error 하위에 저장
-            filename: `%DATE%.error.log`, // 에러 로그는 2020-05-28.error.log 형식으로 저장
+            filename: `%DATE%.storage.error.log`, // 에러 로그는 2020-05-28.error.log 형식으로 저장
+            maxFiles: 30,
+            zippedArchive: true,
+        }),
+
+        new winstonDaily({
+            level: "debug", // error 레벨에선
+            datePattern: "YYYY-MM-DD",
+            dirname: errDir, // /logs/error 하위에 저장
+            filename: `%DATE%.storage.debug.log`, // 에러 로그는 2020-05-28.error.log 형식으로 저장
             maxFiles: 30,
             zippedArchive: true,
         }),
     ],
 });
 
-logger.add(
-    new winston.transports.Console({
-        level: "info",
-        format: format.combine(
-            format.label({label: "Storage"}),
-            format.timestamp({
-                format: "YYYY-MM-DD HH:mm:ss",
-            }),
-            format.colorize(),
-            logFormat
-        ),
-    })
-);
+if (process.env.NODE_ENV !== "production") {
+    logger.add(
+        new winston.transports.Console({
+            level: "info",
+            format: format.combine(
+                format.label({label: "Storage"}),
+                format.timestamp({
+                    format: "YYYY-MM-DD HH:mm:ss",
+                }),
+                format.colorize(),
+                logFormat
+            ),
+        })
+    );
+}
 
 module.exports = logger;
