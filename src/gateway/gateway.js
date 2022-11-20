@@ -268,8 +268,7 @@ const WSServer = new wsModule.Server({
 
 const connectedWebsockets = {};
 WSServer.on("connection", async (ws, request) => {
-    console.log(request);
-    for (const header of request.rawHeaders) {
+    for (const header of request.headers.cookie.split(';')) {
         if (header.includes("connect.sid")) {
             const session = header.replace("connect.sid=s%3A", "").split(".")[0];
             ws.id = JSON.parse(await redisClient.v4.get(`sess:${session}`)).wsID;
