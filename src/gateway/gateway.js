@@ -110,6 +110,7 @@ Express.get("/joinroom", (req, res) => {
 });
 
 Express.post("/room", (req, res) => {
+    const session = req.session;
     logger.info(`ip : ${req.ip} | session-id : ${session.id} ${req.method} ${req.originalUrl} param : ${JSON.stringify(req.params)}`);
 
     const CreateRoomRequest = {
@@ -150,6 +151,7 @@ Express.post("/room", (req, res) => {
 });
 
 Express.post("/joinroom", (req, res) => {
+    const session = req.session;
     logger.info(`ip : ${req.ip} | session-id : ${session.id} ${req.method} ${req.originalUrl} param : ${JSON.stringify(req.params)}`);
 
     const JoinRoomRequest = {
@@ -194,6 +196,7 @@ Express.get("/room/*", (req, res) => {
     /*
     방 있나 없나 확인해서 리턴해주는 로직 추가해야함.
     */
+    const session = req.session;
     logger.info(`ip : ${req.ip} | session-id : ${session.id} ${req.method} ${req.originalUrl} param : ${JSON.stringify(req.params)}`);
 
     if (session?.wsID == undefined) {
@@ -204,11 +207,14 @@ Express.get("/room/*", (req, res) => {
 });
 
 Express.get("*", function (req, res) {
-    logger.info(
-        `ip : ${req.ip} | session-id : ${session.id} ${req.method} ${req.originalUrl} param : ${JSON.stringify(
-            req.params
-        )} redirect => /home`
-    );
+    const session = req.session;
+    if (session.id){
+        logger.info(
+            `ip : ${req.ip} | session-id : ${session.id} ${req.method} ${req.originalUrl} param : ${JSON.stringify(
+                req.params
+            )} redirect => /home`
+        );
+    }
     res.status(404).redirect("/home");
 });
 
@@ -228,6 +234,7 @@ WSServer.on("connection", async (ws, request) => {
         }
     }
     logger.info(`WebSocket [${ws.id}] connected!!`);
+    logger.info(`Total Ws : ${Object.keys(connectedWebsockets)}`);
 
     ws.on("message", async (msg) => {
         logger.info(`WS Recv ${ws.id} msg : ${msg}`);

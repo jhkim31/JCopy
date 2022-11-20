@@ -9,13 +9,13 @@ const winstonDaily = require("winston-daily-rotate-file");
 const {combine, timestamp, label, printf} = winston.format;
 
 //* 로그 파일 저장 경로 → 루트 경로/logs 폴더
-let logDir = '';
-let errDir = ''
-if (process.env.NODE_ENV == 'develop'){
+let logDir = "";
+let errDir = "";
+if (process.env.NODE_ENV == "develop") {
     logDir = `${process.cwd()}/logs/info`;
     errDir = `${process.cwd()}/logs/error`;
 }
-if (process.env.NODE_ENV == 'production'){
+if (process.env.NODE_ENV == "production") {
     logDir = `/logs/info`;
     errDir = `/logs/error`;
 }
@@ -84,20 +84,18 @@ const logger = winston.createLogger({
     ],
 });
 
-if (process.env.NODE_ENV !== "production") {
-    logger.add(
-        new winston.transports.Console({
-            level: "info",
-            format: format.combine(
-                format.label({label: "Room"}),
-                format.timestamp({
-                    format: "YYYY-MM-DD HH:mm:ss",
-                }),
-                format.colorize(),
-                logFormat,
-            ),
-        })
-    );
-}
+logger.add(
+    new winston.transports.Console({
+        level: "info",
+        format: format.combine(
+            format.label({label: "Room"}),
+            format.timestamp({
+                format: "YYYY-MM-DD HH:mm:ss",
+            }),
+            format.colorize(),
+            logFormat
+        ),
+    })
+);
 
 module.exports = logger;

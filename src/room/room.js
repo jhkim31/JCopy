@@ -165,7 +165,7 @@ gRPCServer.addService(RoomProto.RoomService.service, {
 });
 
 //start the Server
-gRPCServer.bindAsync("localhost:5000", grpc.ServerCredentials.createInsecure(), (error, port) => {
+gRPCServer.bindAsync("0.0.0.0:5000", grpc.ServerCredentials.createInsecure(), (error, port) => {
     logger.info(`listening on port ${port}`);
     gRPCServer.start();
 });
