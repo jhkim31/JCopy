@@ -39,7 +39,7 @@ const TextField = styled.textarea`
 `;
 
 function App() {
-    const ws = new WebSocket("ws://localhost:3000");
+    const ws = new WebSocket("ws://jcopy.net");
     return (
         <Main>
             <BrowserRouter>

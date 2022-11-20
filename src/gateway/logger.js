@@ -86,20 +86,18 @@ const logger = winston.createLogger({
     ],
 });
 
-if (process.env.NODE_ENV !== "production") {
-    logger.add(
-        new winston.transports.Console({
-            level: "info",
-            format: format.combine(
-                format.label({label: "gateway"}),
-                format.timestamp({
-                    format: "YYYY-MM-DD HH:mm:ss",
-                }),
-                format.colorize(),
-                logFormat,
-            ),
-        })
-    );
-}
+logger.add(
+    new winston.transports.Console({
+        level: "info",
+        format: format.combine(
+            format.label({label: "gateway"}),
+            format.timestamp({
+                format: "YYYY-MM-DD HH:mm:ss",
+            }),
+            format.colorize(),
+            logFormat,
+        ),
+    })
+);
 
 module.exports = logger;
