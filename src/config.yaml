@@ -15,7 +15,7 @@ develop:
     host: localhost
     port: 27017
     dbName: test
-  grpc: 
+  grpc:
     proto:
       path: '../proto/jcopy.proto'
     RoomService:
@@ -31,7 +31,7 @@ deploy:
     groupid:
       gateway: jcopy-gateway
       room: ''
-      storage: jcopy-storage    
+      storage: jcopy-storage
   redis:
     host: redis-service
     port: 6379
@@ -41,7 +41,7 @@ deploy:
     host: mongo-service
     port: 27017
     dbName: test
-  grpc: 
+  grpc:
     proto:
       path: './jcopy.proto'
     RoomService:

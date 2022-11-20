@@ -1,5 +1,11 @@
 # Created by https://www.toptal.com/developers/gitignore/api/macos,node,visualstudiocode
 # Edit at https://www.toptal.com/developers/gitignore?templates=macos,node,visualstudiocode
+### custom ###
+
+**/logs/
+**/error_logs/
+**/package-lock.json
+
 
 ### macOS ###
 # General
@@ -175,7 +181,7 @@ dist
 .svelte-kit
 
 ### VisualStudioCode ###
-.vscode/*
+.vscode/**
 !.vscode/settings.json
 !.vscode/tasks.json
 !.vscode/launch.json

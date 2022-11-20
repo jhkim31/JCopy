@@ -3,62 +3,74 @@ syntax = "proto3";
 message Empty {}
 
 message CreateRoomRequest {
-    string clientSession = 1;
-    string expireTime = 2;      // Date str
+    string id = 1;
+    string clientSession = 2;
+    string expireTime = 3;      // Date str
 }
 
 message CreateRoomResponse {
-    string roomId = 1;
-    string textId = 2;
-    repeated string fileIds = 3;
-}
-
-message JoinRoomRequest {
-    string clientSession = 1;
-    string roomId = 2;
-}
-
-message JoinRoomResponse {
-    string result = 1;
+    string id = 1;
     string roomId = 2;
     string textId = 3;
     repeated string fileIds = 4;
 }
 
+message JoinRoomRequest {
+    string id = 1;
+    string clientSession = 2;
+    string roomId = 3;
+}
+
+message JoinRoomResponse {
+    string id = 1;
+    string result = 2;
+    string roomId = 3;
+    string textId = 4;
+    repeated string fileIds = 5;
+}
+
 message CreateTextRequest {
-    string expireTime = 1;      // Date str
+    string id = 1;
+    string expireTime = 2;      // Date str
 }
 
 message CreateTextResponse {
-    string textId = 1;
+    string id = 1;
+    string textId = 2;
 }
 
 message GetJoinedSessionsRequest {
-    string textId = 1;
-    string clientSession = 2;
+    string id = 1;
+    string textId = 2;
+    string clientSession = 3;
 }
 
 message GetJoinedSessionsResponse {
-    string roomId = 1;
-    repeated string clientSessions = 2;
+    string id = 1;
+    string roomId = 2;
+    repeated string clientSessions = 3;
 }
 
 message GetTextRequest {
-    string textId = 1;
+    string id = 1;
+    string textId = 2;
 }
 
 message GetTextResponse {
-    string textValue = 1;
+    string id = 1;
+    string textValue = 2;
 }
 
 message GetFilesRequest {
-    string textId = 1;
-    repeated string fileIds = 2;
+    string id = 1;
+    string textId = 2;
+    repeated string fileIds = 3;
 }
 
 message GetFilesResponse {
-    string textValue = 1;
-    repeated string fileNames = 2;
+    string id = 1;
+    string textValue = 2;
+    repeated string fileNames = 3;
 }
 
 service RoomService {
