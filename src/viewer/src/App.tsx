@@ -1,5 +1,5 @@
-import React, {useEffect, useState} from "react";
 import {BrowserRouter, Routes, Route, redirect, useNavigate, useLocation} from "react-router-dom";
+import React, {useEffect, useState} from "react";
 import "./App.css";
 import styled from "styled-components";
 import {FileUploader} from "react-drag-drop-files";
@@ -39,7 +39,10 @@ const TextField = styled.textarea`
 `;
 
 function App() {
-    const ws = new WebSocket("ws://jcopy.net");
+    console.log(window.location);
+    const host = window.location.host;
+    let ws = new WebSocket(`ws://${host}`);
+
     return (
         <Main>
             <BrowserRouter>
@@ -63,7 +66,6 @@ function Home() {
                 const roomInfo = d;
                 return navigate(`/room/${d.roomId}`, {state: roomInfo});
             });
-        // return navigate(`/room/1234`, {state: {}});
     }
 
     async function joinRoom() {
@@ -153,10 +155,14 @@ function JoinRoom() {
         fetch(`/joinroom?roomId=${roomId}`, {method: "POST"})
             .then((d) => d.json())
             .then((d) => {
-                const state = d;
-                return navigate(`/room/${d.roomId}`, {state: state});
+                if (d.error == 0){
+                    const state = d;
+                    return navigate(`/room/${d.roomId}`, {state: state});
+                } else {
+                    alert('해당 방이 없습니다!');
+                }
+
             });
-        // return navigate(`/room/1234`, {state: {}});
     }
     return (
         <div>
