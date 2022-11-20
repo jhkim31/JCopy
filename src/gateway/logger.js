@@ -11,7 +11,7 @@ const {combine, timestamp, label, printf} = winston.format;
 //* 로그 파일 저장 경로 → 루트 경로/logs 폴더
 let logDir = '';
 let errDir = ''
-if (procces.env.NODE_ENV == 'develop'){
+if (process.env.NODE_ENV == 'develop'){
     logDir = `${process.cwd()}/logs/info`;
     errDir = `${process.cwd()}/logs/error`;
 }
