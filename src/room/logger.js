@@ -11,13 +11,16 @@ const {combine, timestamp, label, printf} = winston.format;
 //* 로그 파일 저장 경로 → 루트 경로/logs 폴더
 let logDir = "";
 let errDir = "";
+let debugDir = "";
 if (process.env.NODE_ENV == "develop") {
     logDir = `${process.cwd()}/logs/info`;
     errDir = `${process.cwd()}/logs/error`;
+    debugDir = `${process.cwd()}/logs/debug`;
 }
 if (process.env.NODE_ENV == "production") {
     logDir = `/logs/info`;
     errDir = `/logs/error`;
+    debugDir = `/logs/debug`;
 }
 //* log 출력 포맷 정의 함수
 const logFormat = printf(({level, message, label, timestamp}) => {
@@ -85,7 +88,7 @@ const logger = winston.createLogger({
         new winstonDaily({
             level: "debug", // error 레벨에선
             datePattern: "YYYY-MM-DD",
-            dirname: errDir, // /logs/error 하위에 저장
+            dirname: debugDir, // /logs/error 하위에 저장
             filename: `%DATE%.room.debug.log`, // 에러 로그는 2020-05-28.error.log 형식으로 저장
             maxFiles: 30,
             zippedArchive: true,
