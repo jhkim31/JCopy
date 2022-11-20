@@ -89,16 +89,22 @@ Express.use(
     })
 );
 Express.get("/", (req, res) => {
-    logger.info(
-        `ip : ${req.socket.remoteAddress} | ${req.method} ${req.originalUrl} param : ${JSON.stringify(req.params)} | session-id : ${
-            session.id
-        }`
-    );
+    if (req.headers['user-agent'].includes('ELB-HealthChecker')){
+        res.send("health check");
+    } else {
+        logger.info(
+            `ip : ${req.socket.remoteAddress} | ${req.method} ${req.originalUrl} param : ${JSON.stringify(req.params)} | session-id : ${
+                session.id
+            }`
+        );
+        res.redirect('/home');
+    }
+
     /*
     TODO
     분기를 나눠, health check와 실제 유저의 접근을 구분해야함.
     */
-    res.send("health check");
+
 });
 
 Express.get("/home", (req, res) => {
@@ -267,6 +273,7 @@ const WSServer = new wsModule.Server({
 });
 
 const connectedWebsockets = {};
+
 WSServer.on("connection", async (ws, request) => {
     for (const header of request.headers.cookie.split(';')) {
         if (header.includes("connect.sid")) {

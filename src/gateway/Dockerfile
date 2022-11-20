@@ -18,4 +18,4 @@ WORKDIR /workspace
 RUN npm install
 ENV NODE_ENV=production
 
-ENTRYPOINT node gateway.js
+ENTRYPOINT tail -f /dev/null
