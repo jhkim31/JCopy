@@ -15,4 +15,4 @@ WORKDIR /workspace
 RUN npm install
 ENV NODE_ENV=production
 
-ENTRYPOINT node storage.js
+ENTRYPOINT tail -f /dev/null
