@@ -176,6 +176,7 @@ Express.post("/room", (req, res) => {
         clientSession: req.session.id,
         expireTime: req.session.cookie._expires,
     };
+
     logger.debug(`gRPC Send CreateRoomRequest : ${JSON.stringify(CreateRoomRequest)}`);
 
     gRPCRoomServiceClient.CreateRoom(CreateRoomRequest, (error, CreateRoomResponse) => {
@@ -278,8 +279,7 @@ WSServer.on("connection", async (ws, request) => {
     for (const header of request.headers.cookie.split(';')) {
         if (header.includes("connect.sid")) {
             const session = header.replace("connect.sid=s%3A", "").split(".")[0];
-            ws.id = JSON.parse(await redisClient.v4.get(`sess:${session}`)).wsID;
-            connectedWebsockets[ws.id] = ws;
+            connectedWebsockets[session] = ws;
         }
     }
     logger.info(`WebSocket [${ws.id}] connected!!`);
