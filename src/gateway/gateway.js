@@ -50,14 +50,14 @@ const redisClient = createClient({url: `redis://${config.redis.host}:${config.re
 (async () => {
     await producer.connect();
     await consumer.connect();
-    logger.info("kafka connected");
+    logger.info("gateway kafka connected");
 })();
 
 try {
     redisClient.connect();
-    logger.info("redis connected");
+    logger.info("gateway redis connected");
 } catch (e) {
-    logger.error(`redis disconnected : \n${e}`);
+    logger.error(`gateway redis disconnected : \n${e}`);
 }
 
 try {
@@ -69,9 +69,9 @@ try {
         `${config.grpc.StorageService.host}:${config.grpc.StorageService.port}`,
         grpc.credentials.createInsecure()
     );
-    logger.info("grpc connected");
+    logger.info("gateway grpc connected");
 } catch {
-    logger.error(`grpc connect error : \n${e}`);
+    logger.error(`gateway grpc connect error : \n${e}`);
 }
 
 const Express = express();
@@ -84,75 +84,58 @@ Express.use(
         resave: false,
         saveUninitialized: true,
         cookie: {
-            expires: 600000, // 10분 만료
+            maxAge: 1000 * 60 * 60, // 1시간
         },
     })
 );
 Express.get("/", (req, res) => {
-    if (req.headers['user-agent'].includes('ELB-HealthChecker')){
+    if (req.headers["user-agent"].includes("ELB-HealthChecker")) {
         res.send("health check");
+        req.session.destroy();
     } else {
         logger.info(
-            `ip : ${req.socket.remoteAddress} | ${req.method} ${req.originalUrl} param : ${JSON.stringify(req.params)} | session-id : ${
-                session.id
-            }`
+            `${req.method} ${req.originalUrl} ${req.socket.remoteAddress}  ${JSON.stringify(req.params)} | session-id : ${req.session.id}`
         );
-        res.redirect('/home');
+        res.redirect("/home");
     }
-
-    /*
-    TODO
-    분기를 나눠, health check와 실제 유저의 접근을 구분해야함.
-    */
-
 });
 
 Express.get("/home", (req, res) => {
-    const session = req.session;
-    logger.info(
-        `ip : ${req.socket.remoteAddress} | ${req.method} ${req.originalUrl} param : ${JSON.stringify(req.params)} | session-id : ${
-            session.id
-        }`
-    );
-
-    if (session?.wsID == undefined) {
-        //여기서 wsID라는 필드를 추가하게 되면 redis에 저장된 세션에 wsID라는 필드를 추가됨.
-        session.wsID = session.id;
-    }
-
+    logger.info(`${req.method} ${req.originalUrl} ${req.socket.remoteAddress}  ${JSON.stringify(req.params)} | session-id : ${req.session.id}`);
     res.sendFile("index.html", {root: "."});
 });
 
 Express.get("/joinroom", (req, res) => {
-    const session = req.session;
-    logger.info(
-        `ip : ${req.socket.remoteAddress} | ${req.method} ${req.originalUrl} param : ${JSON.stringify(req.params)} | session-id : ${
-            session.id
-        }`
-    );
-
-    if (session?.wsID == undefined) {
-        session.wsID = session.id;
-    }
+    logger.info(`${req.method} ${req.originalUrl} ${req.socket.remoteAddress}  ${JSON.stringify(req.params)} | session-id : ${req.session.id}`);
     res.sendFile("index.html", {root: "."});
 });
 
 Express.get("/room/*", (req, res) => {
+    logger.info(`${req.method} ${req.originalUrl} ${req.socket.remoteAddress}  ${JSON.stringify(req.params)} | session-id : ${req.session.id}`);
     /*
     방 있나 없나 확인해서 리턴해주는 로직 추가해야함.
     */
-    const session = req.session;
-    logger.info(
-        `ip : ${req.socket.remoteAddress} | ${req.method} ${req.originalUrl} param : ${JSON.stringify(req.params)} | session-id : ${
-            session.id
-        }`
-    );
-
-    if (session?.wsID == undefined) {
-        res.redirect("/home");
-    }
 
     res.sendFile("/index.html", {root: "."});
+});
+
+Express.get("/text", (req, res) => {
+    const GetTextRequest = {
+        id: uuidv4(),
+        textId: req.params.id,
+    };
+
+    logger.debug(`gRPC Send GetTextRequest : ${JSON.stringify(GetTextRequest)}`);
+    gRPCStorageServiceClient.GetText(GetTextRequest, (error, GetTextResponse) => {
+        if (error) {
+            logger.error(`gRPC GetText Error RPC_ID : ${GetTextRequest.id} | ${error}`);
+            res.send("");
+        } else {
+            logger.debug(`gRPC Recv GetTextResponse : ${JSON.stringify(GetTextResponse)}`);
+            logger.info(`GET /text [${req.params.id}] Response : ${GetTextResponse.textValue}`);
+            res.send(GetTextResponse.textValue);
+        }
+    });
 });
 
 Express.get("*", function (req, res) {
@@ -174,11 +157,10 @@ Express.post("/room", (req, res) => {
     const CreateRoomRequest = {
         id: uuidv4(),
         clientSession: req.session.id,
-        expireTime: req.session.cookie._expires,
+        expireTime: new Date(new Date().getTime() + 1000 * 60 * 5).toISOString(),
     };
 
     logger.debug(`gRPC Send CreateRoomRequest : ${JSON.stringify(CreateRoomRequest)}`);
-
     gRPCRoomServiceClient.CreateRoom(CreateRoomRequest, (error, CreateRoomResponse) => {
         if (error) {
             logger.error(`gRPC CreateRoomRequest Error RPC_ID : ${CreateRoomRequest.id} | ${error}`);
@@ -248,7 +230,7 @@ Express.post("/joinroom", (req, res) => {
                                 value: GetFilesResponse.textValue,
                             },
                             files: GetFilesResponse.fileNames,
-                            error: 0
+                            error: 0,
                         };
                         logger.info(`POST /joinroom [${req.socket.remoteAddress}] Response : ${JSON.stringify(wsRes)}`);
                         res.send(wsRes);
@@ -259,8 +241,9 @@ Express.post("/joinroom", (req, res) => {
                     roomId: JoinRoomResponse.roomId,
                     text: {},
                     files: [],
-                    error: 1
+                    error: 1,
                 };
+                logger.info(`POST /joinroom [${req.socket.remoteAddress}] Response : ${JSON.stringify(wsRes)}`);
                 res.send(wsRes);
             }
         }
@@ -276,28 +259,32 @@ const WSServer = new wsModule.Server({
 const connectedWebsockets = {};
 
 WSServer.on("connection", async (ws, request) => {
-    for (const header of request.headers.cookie.split(';')) {
+    for (const header of request.headers.cookie.split(";")) {
         if (header.includes("connect.sid")) {
             const session = header.replace("connect.sid=s%3A", "").split(".")[0];
             connectedWebsockets[session] = ws;
+            ws.id = session;
+            logger.info(`WebSocket [${session}] connected!!`);
+            break;
         }
     }
-    logger.info(`WebSocket [${ws.id}] connected!!`);
+
     logger.info(`Total Ws : ${Object.keys(connectedWebsockets)}`);
 
     ws.on("message", async (msg) => {
-        logger.debug(`WS [${ws.id}] Recv  msg : ${msg}`);
+        logger.debug(`WS [${ws.id}] Recv msg : ${msg}`);
         const wsMsg = JSON.parse(msg);
 
         const kafkaMsg = {
             id: uuidv4(),
+            roomId: wsMsg.roomId,
             textId: wsMsg.textId,
             textValue: wsMsg.textValue,
             clientSession: ws.id,
         };
 
         const kafkaData = {topic: "ChangeText", messages: [{value: JSON.stringify(kafkaMsg)}]};
-        logger.debug(`Produce [Topic : ChangeText] ${JSON.stringify(kafkaMsg)}`);
+        logger.debug(`Produce ChangeText ${JSON.stringify(kafkaMsg)}`);
         await producer.send(kafkaData);
     });
 });
@@ -307,7 +294,7 @@ async function kafkaConsumerListener() {
     logger.info('Kafka Subscribe Topics "TextChanged"');
     await consumer.run({
         eachMessage: async ({topic, partition, message, heartbeat, pause}) => {
-            logger.debug(`Consume [Topic : ${topic}] ${message.value}`);
+            logger.debug(`Consume ${topic} ${message.value}`);
             let msg = {};
             try {
                 msg = JSON.parse(message.value.toString());
@@ -319,7 +306,7 @@ async function kafkaConsumerListener() {
                 if (topic == "TextChanged") {
                     const GetJoinedSessionsRequest = {
                         id: uuidv4(),
-                        textId: msg.textId,
+                        roomId: msg.roomId,
                         clientSession: msg.clientSession,
                     };
                     logger.debug(`gRPC Send GetJoinedSessionsRequest : ${JSON.stringify(GetJoinedSessionsRequest)}`);

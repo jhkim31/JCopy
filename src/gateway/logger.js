@@ -99,7 +99,7 @@ const logger = winston.createLogger({
 
 logger.add(
     new winston.transports.Console({
-        level: "info",
+        level: "debug",
         format: format.combine(
             format.label({label: "Gateway"}),
             format.timestamp({
@@ -109,7 +109,6 @@ logger.add(
             logFormat
         ),
     })
-
-}
+);
 
 module.exports = logger;
