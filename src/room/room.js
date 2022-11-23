@@ -79,17 +79,19 @@ gRPCServer.addService(RoomProto.RoomService.service, {
                 } else {
                     logger.debug(`gRPC Recv CreateTextResponse : ${JSON.stringify(CreateTextResponse)}`);
                     const textId = CreateTextResponse.textId;
-                    const room = new Room({
+                    const roomData = {
                         roomId: roomId,
                         sessions: [CreateRoomRequest.request.clientSession],
                         textId: textId,
                         fileIds: [],
                         expireAt: new Date(CreateRoomRequest.request.expireTime),
                         expireTime: new Date(CreateRoomRequest.request.expireTime),
-                    });
+                    }
+                    logger.debug(`Mongo Create Room [${roomId}] room : ${JSON.stringify(roomData)}`);
+                    const room = new Room(roomData);
 
                     await room.save().then((result) => {
-                        logger.info(`Mongo Create Room ${JSON.stringify(result)}`);
+                        logger.info(`Mongo Create Room[${roomId}] res : ${JSON.stringify(result)}`);
                     });
 
                     const CreateRoomResponse = {
@@ -116,9 +118,9 @@ gRPCServer.addService(RoomProto.RoomService.service, {
 
             await Room.updateOne({roomId: roomId}, {$addToSet: {sessions: clientSession}}).then((res) => {
                 if (res.modifiedCount == 0){
-                    logger.warn(`Mongo Not Search Room : ${roomId}`);
+                    logger.warn(`RPC_ID : ${id} | Mongo Not Search Room : ${roomId}`);
                 } else {
-                    logger.debug(`Mongo Update Room [${roomId}] (Add Session) ${JSON.stringify(res)}`);
+                    logger.debug(`RPC_ID : ${id} | Mongo Update Room [${roomId}] (Add Session) ${JSON.stringify(res)}`);
                 }
 
             });
@@ -155,12 +157,12 @@ gRPCServer.addService(RoomProto.RoomService.service, {
         logger.debug(`gRPC Recv GetJoinedSessionsRequest : ${JSON.stringify(GetJoinedSessionsRequest.request)}`);
         try {
             const id = GetJoinedSessionsRequest.request.id;
-            const textId = GetJoinedSessionsRequest.request.textId;
+            const roomId = GetJoinedSessionsRequest.request.roomId;
             const clientSession = GetJoinedSessionsRequest.request.clientSession;
 
-            const room = await Room.findOne({textId: textId, sessions: clientSession});
-
+            const room = await Room.findOne({roomId: roomId});
             const GetJoinedSessionsResponse = {
+                id: id,
                 roomId: room.roomId,
                 clientSessions: room.sessions,
             };

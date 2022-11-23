@@ -102,14 +102,16 @@ gRPCServer.addService(StorageProto.StorageService.service, {
         try {
             const id = GetFilesRequest.request.id;
             const textValue = await redisClient.get(GetFilesRequest.request.textId);
+            logger.debug(`RPC_ID : ${id} | Get Redis Text : {${GetFilesRequest.request.textId} : ${textValue}}`);
             const fileNames = [];
 
             for (const fileId in GetFilesRequest.request.fileIds) {
                 fileNames.push(await redisClient.get(fileId));
             }
-            logger.debug(`Get Redis ${GetFilesRequest.request.fileIds} : ${fileNames}`);
+            logger.debug(`RPC_ID : ${id} | Get Redis ${GetFilesRequest.request.fileIds} : ${fileNames}`);
 
             const GetFilesResponse = {
+                id: id,
                 textValue: textValue,
                 fileNames: fileNames,
             };
@@ -139,6 +141,7 @@ async function kafkaConsumerListener() {
                     await redisClient.set(msg.textId, msg.textValue, {KEEPTTL: true});
                     logger.debug(`Set Redis ${msg.textId} : ${msg.textValue}`);
                     const kafkaMsg = {
+                        roomId: msg.roomId,
                         textId: msg.textId,
                         textValue: msg.textValue,
                         clientSession: msg.clientSession,

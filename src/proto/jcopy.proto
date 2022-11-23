@@ -41,7 +41,7 @@ message CreateTextResponse {
 
 message GetJoinedSessionsRequest {
     string id = 1;
-    string textId = 2;
+    string roomId = 2;
     string clientSession = 3;
 }
 
