@@ -1,5 +1,5 @@
-import {BrowserRouter, Routes, Route, redirect, useNavigate, useLocation} from "react-router-dom";
-import React, {useEffect, useState} from "react";
+import {useNavigate} from "react-router-dom";
+import React, {useEffect, useState, useRef} from "react";
 import styled from "styled-components";
 import {FileUploader} from "react-drag-drop-files";
 
@@ -19,48 +19,65 @@ const TextField = styled.textarea`
     margin: 10px;
 `;
 
+
 function RoomComponent(props: {ws: WebSocket}) {
-    const reactLocation = useLocation();
     const navigate = useNavigate();
     const ws = props.ws;
     const fileTypes = ["JPG", "PNG", "GIF"];
-    const [textId, setTextId] = useState('');
-    const [text, setText] = useState('');
-    const [roomId, setRoomId] = useState('');
-    const [roomInfo, setRoomInfo] = useState({});
-    const [session, setSession] = useState('');
+    const [roomInfo, setRoomInfo] = useState({
+        text: {
+            id: "",
+            value: "",
+        },
+        files: [],
+        roomId: "",
+        session: "",
+    });
 
     useEffect(() => {
-        const pathRoomId = window.location.pathname.replace('/room/', '');
+        const pathRoomId = window.location.pathname.replace("/room/", "");
         fetch(`/joinroom?roomId=${pathRoomId}`, {method: "POST"})
-        .then(d => d.json())
-        .then(d => {
-            if (d.error == 0){
-                setTextId(d.text.id);
-                setText(d.text.value);
-                setRoomId(d.roomId);
-                setSession(d.session)
-            } else {
-                alert('해당 방이 없습니다!');
-                return navigate('/home');
+            .then((d) => d.json())
+            .then((d) => {
+                if (d.error == 0) {
+                    setRoomInfo((prev) => {
+                        const current = {...prev};
+                        current.text = d.text;
+                        current.roomId = d.roomId;
+                        current.session = d.session;
+                        return current;
+                    });
+                } else {
+                    alert("해당 방이 없습니다!");
+                    return navigate("/home");
+                }
+            });
+        setInterval(() => {
+            const ping = {
+                ping: 'ping'
             }
-        })
+            ws.send(JSON.stringify(ping));
+        }, 1000 * 10);
 
         ws.onmessage = (evt) => {
-            setText(evt.data);
-        }
-    }, [])
+            setRoomInfo((prev) => {
+                const current = {...prev};
+                current.text.value = evt.data;
+                return current;
+            });
+        };
+    }, []);
 
     const [fileList, setFileList] = useState<File[]>([]);
 
-    function textHandler(e: React.ChangeEvent<HTMLTextAreaElement>){
-        setText(e.target.value);
-        const msg = {
-            roomId: roomId,
-            textId: textId,
-            textValue: e.target.value
-        }
-        ws.send(JSON.stringify(msg));
+    function textHandler(e: React.ChangeEvent<HTMLTextAreaElement>) {
+        setRoomInfo((prev) => {
+            const current = {...prev};
+            current.text.value = e.target.value;
+            return current;
+        });
+
+        ws.send(JSON.stringify(roomInfo));
     }
 
     const handleChange = (file: File) => {
@@ -71,9 +88,9 @@ function RoomComponent(props: {ws: WebSocket}) {
     };
     return (
         <Room>
-            <RoomID>{roomId}</RoomID>
-            <div>{session}</div>
-            <TextField onChange={textHandler} value={text}/>
+            <RoomID>{roomInfo.roomId}</RoomID>
+            <div>{roomInfo.session}</div>
+            <TextField onChange={textHandler} value={roomInfo.text.value} />
             <div id="fileList">
                 {fileList.map((item) => {
                     return <div key={Math.random()}>{item.toString()}</div>;

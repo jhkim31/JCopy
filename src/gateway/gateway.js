@@ -76,7 +76,7 @@ Express.use(
         resave: false,
         saveUninitialized: true,
         cookie: {
-            maxAge: 1000 * 60 * 10, // 10분
+            maxAge: 1000 * 60 * 60, // 10분
         },
     })
 );
@@ -111,12 +111,11 @@ Express.get("/room/*", (req, res) => {
 });
 
 Express.get("/text", (req, res) => {
-
     const GetTextRequest = {
         id: uuidv4(),
         textId: req.params.id,
     };
-    console.log(req.params)
+    console.log(req.params);
 
     logger.debug(`[0011] gRPC Send GetTextRequest : ${JSON.stringify(GetTextRequest)}`);
     gRPCStorageServiceClient.GetText(GetTextRequest, (error, GetTextResponse) => {
@@ -138,12 +137,14 @@ Express.get("*", function (req, res) {
 
 Express.post("/room", (req, res) => {
     const session = req.session;
-    logger.info(`[0016] ip : ${req.socket.remoteAddress} | ${req.method} ${req.originalUrl} param : ${JSON.stringify(req.params)} | session-id : ${session.id}`);
+    logger.info(
+        `[0016] ip : ${req.socket.remoteAddress} | ${req.method} ${req.originalUrl} param : ${JSON.stringify(req.params)} | session-id : ${session.id}`
+    );
 
     const CreateRoomRequest = {
         id: uuidv4(),
         clientSession: req.session.id,
-        expireTime: new Date(new Date().getTime() + 1000 * 60 * 5).getTime()
+        expireTime: new Date(new Date().getTime() + 1000 * 60 * 5).getTime(),
     };
 
     logger.debug(`[0017] gRPC Send CreateRoomRequest : ${JSON.stringify(CreateRoomRequest)}`);
@@ -213,7 +214,7 @@ Express.post("/joinroom", (req, res) => {
                             },
                             files: GetFilesResponse.fileNames,
                             error: 0,
-                            session: req.session.id
+                            session: req.session.id,
                         };
                         logger.info(`[0031] POST /joinroom [${req.socket.remoteAddress}] Response : ${JSON.stringify(wsRes)}`);
                         res.send(wsRes);
@@ -252,19 +253,32 @@ WSServer.on("connection", async (ws, request) => {
     ws.on("message", async (msg) => {
         logger.debug(`[0035] WS [${ws.id}] Recv msg : ${msg}`);
         const wsMsg = JSON.parse(msg);
-
-        const kafkaMsg = {
-            id: uuidv4(),
-            roomId: wsMsg.roomId,
-            textId: wsMsg.textId,
-            textValue: wsMsg.textValue,
-            clientSession: ws.id,
-        };
-
-        const kafkaData = {topic: "ChangeText", messages: [{value: JSON.stringify(kafkaMsg)}]};
-        logger.debug(`[0036] Produce ChangeText ${JSON.stringify(kafkaMsg)}`);
-        await producer.send(kafkaData);
+        if (wsMsg.ping == "ping") {
+            ws.pong('pong');
+        } else {
+            const kafkaMsg = {
+                id: uuidv4(),
+                roomId: wsMsg.roomId,
+                textId: wsMsg.text.id,
+                textValue: wsMsg.text.value,
+                clientSession: ws.id,
+            };
+            const kafkaData = {topic: "ChangeText", messages: [{value: JSON.stringify(kafkaMsg)}]};
+            logger.debug(`[0036] Produce ChangeText ${JSON.stringify(kafkaMsg)}`);
+            await producer.send(kafkaData);
+        }
     });
+
+    ws.on('close', (code, reason) => {
+        console.log(`close ws : ${ws.id}`);
+        console.log(code)
+        console.log(reason)
+    })
+
+    ws.on('ping', (data) => {
+        console.log(`ping ws : ${ws.id}`);
+        console.log(data);
+    })
 });
 
 async function kafkaConsumerListener() {
@@ -296,11 +310,11 @@ async function kafkaConsumerListener() {
                             for (const sessionId of GetJoinedSessionsResponse.clientSessions) {
                                 if (msg.clientSession != sessionId) {
                                     WSServer.clients.forEach(function each(client) {
-                                        if (client.readyState == wsModule.OPEN && client.id == sessionId){
+                                        if (client.readyState == wsModule.OPEN && client.id == sessionId) {
                                             logger.debug(`WS [${client.id}] Send  msg : ${msg.textValue}`);
                                             client.send(msg.textValue);
                                         }
-                                    })
+                                    });
                                 }
                             }
                         }
