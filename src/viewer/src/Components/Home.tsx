@@ -26,9 +26,12 @@ function Home() {
         fetch("/room", {method: "POST"})
             .then((d) => d.json())
             .then((d) => {
-
                 const roomInfo = d;
-                return navigate(`/room/${d.roomId}`);
+                if (d.roomId) {
+                    return navigate(`/room/${d.roomId}`);
+                } else {
+                    alert('방 생성에 문제가 있습니다!');
+                }
             });
     }
 

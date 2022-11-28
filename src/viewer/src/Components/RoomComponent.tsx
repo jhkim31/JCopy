@@ -29,29 +29,19 @@ function RoomComponent(props: {ws: WebSocket}) {
     const [roomId, setRoomId] = useState('');
 
     useEffect(() => {
-        if (reactLocation.state != null){   // redirect 일때
-            setTextId(reactLocation.state.text.id);
-            fetch('/text')
-            .then(d => d.text())
-            .then(t => {
-                setText(t);
-            })
-            setRoomId(reactLocation.state.roomId);
-        } else {
-            const pathRoomId = window.location.pathname.replace('/room/', '');
-            fetch(`/joinroom?roomId=${pathRoomId}`, {method: "POST"})
-            .then(d => d.json())
-            .then(d => {
-                if (d.error == 0){
-                    setTextId(d.text.id);
-                    setText(d.text.value);
-                    setRoomId(d.roomId);
-                } else {
-                    alert('해당 방이 없습니다!');
-                    return redirect('/home');
-                }
-            })
-        }
+        const pathRoomId = window.location.pathname.replace('/room/', '');
+        fetch(`/joinroom?roomId=${pathRoomId}`, {method: "POST"})
+        .then(d => d.json())
+        .then(d => {
+            if (d.error == 0){
+                setTextId(d.text.id);
+                setText(d.text.value);
+                setRoomId(d.roomId);
+            } else {
+                alert('해당 방이 없습니다!');
+                return navigate('/home');
+            }
+        })
 
         ws.onmessage = (evt) => {
             setText(evt.data);
