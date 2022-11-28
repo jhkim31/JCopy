@@ -5,7 +5,8 @@ message Empty {}
 message CreateRoomRequest {
     string id = 1;
     string clientSession = 2;
-    string expireTime = 3;      // Date str
+    int64 expireTime = 3;      // timestamp
+    int64 num=4;
 }
 
 message CreateRoomResponse {
@@ -31,7 +32,7 @@ message JoinRoomResponse {
 
 message CreateTextRequest {
     string id = 1;
-    string expireTime = 2;      // Date str
+    int64 expireTime = 2;      // timestamp
 }
 
 message CreateTextResponse {
@@ -41,7 +42,7 @@ message CreateTextResponse {
 
 message GetJoinedSessionsRequest {
     string id = 1;
-    string textId = 2;
+    string roomId = 2;
     string clientSession = 3;
 }
 
