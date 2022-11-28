@@ -68,6 +68,15 @@ const logger = winston.createLogger({
     transports: [
         //* info 레벨 로그를 저장할 파일 설정 (info: 2 보다 높은 error: 0 와 warn: 1 로그들도 자동 포함해서 저장)
         new winstonDaily({
+            level: "debug", // error 레벨에선
+            datePattern: "YYYY-MM-DD",
+            dirname: debugDir, // /logs/error 하위에 저장
+            filename: `%DATE%.room.debug.log`, // 에러 로그는 2020-05-28.error.log 형식으로 저장
+            maxFiles: 30,
+            zippedArchive: true,
+        }),
+
+        new winstonDaily({
             level: "info", // info 레벨에선
             datePattern: "YYYY-MM-DD", // 파일 날짜 형식
             dirname: logDir, // 파일 경로
@@ -84,21 +93,12 @@ const logger = winston.createLogger({
             maxFiles: 30,
             zippedArchive: true,
         }),
-
-        new winstonDaily({
-            level: "debug", // error 레벨에선
-            datePattern: "YYYY-MM-DD",
-            dirname: debugDir, // /logs/error 하위에 저장
-            filename: `%DATE%.room.debug.log`, // 에러 로그는 2020-05-28.error.log 형식으로 저장
-            maxFiles: 30,
-            zippedArchive: true,
-        }),
     ],
 });
 
 logger.add(
     new winston.transports.Console({
-        level: "info",
+        level: "debug",
         format: format.combine(
             format.label({label: "Room"}),
             format.timestamp({
