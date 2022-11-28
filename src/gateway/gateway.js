@@ -131,10 +131,6 @@ Express.get("/text", (req, res) => {
     });
 });
 
-Express.get("/session", (req, res) => {
-    res.send(req.)
-})
-
 Express.get("*", function (req, res) {
     logger.info(`[0015] ip : ${req.socket.remoteAddress} | ${req.method} ${req.originalUrl} param : ${JSON.stringify(req.params)} redirect => /home`);
     res.status(404).redirect("/home");
@@ -217,6 +213,7 @@ Express.post("/joinroom", (req, res) => {
                             },
                             files: GetFilesResponse.fileNames,
                             error: 0,
+                            session: req.session.id
                         };
                         logger.info(`[0031] POST /joinroom [${req.socket.remoteAddress}] Response : ${JSON.stringify(wsRes)}`);
                         res.send(wsRes);
@@ -242,20 +239,15 @@ const WSServer = new wsModule.Server({
     server: HTTPServer,
 });
 
-const connectedWebsockets = {};
-
 WSServer.on("connection", async (ws, request) => {
     for (const header of request.headers.cookie.split(";")) {
         if (header.includes("connect.sid")) {
             const session = header.replace("connect.sid=s%3A", "").split(".")[0].trim();
-            connectedWebsockets[session] = ws;
             ws.id = session;
             logger.info(`[0033] WebSocket [${session}] connected!!`);
             break;
         }
     }
-
-    logger.info(`[0034] Total Ws : ${Object.keys(connectedWebsockets)}`);
 
     ws.on("message", async (msg) => {
         logger.debug(`[0035] WS [${ws.id}] Recv msg : ${msg}`);
@@ -303,9 +295,12 @@ async function kafkaConsumerListener() {
                             logger.debug(`[0042] gRPC Recv GetJoinedSessionsResponse : ${JSON.stringify(GetJoinedSessionsResponse)}`);
                             for (const sessionId of GetJoinedSessionsResponse.clientSessions) {
                                 if (msg.clientSession != sessionId) {
-                                    const ws = connectedWebsockets[sessionId];
-                                    logger.debug(`WS [${ws.id}] Send  msg : ${msg.textValue}`);
-                                    ws.send(msg.textValue);
+                                    WSServer.clients.forEach(function each(client) {
+                                        if (client.readyState == wsModule.OPEN && client.id == sessionId){
+                                            logger.debug(`WS [${client.id}] Send  msg : ${msg.textValue}`);
+                                            client.send(msg.textValue);
+                                        }
+                                    })
                                 }
                             }
                         }
