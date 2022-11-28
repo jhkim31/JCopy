@@ -131,6 +131,10 @@ Express.get("/text", (req, res) => {
     });
 });
 
+Express.get("/session", (req, res) => {
+    res.send(req.)
+})
+
 Express.get("*", function (req, res) {
     logger.info(`[0015] ip : ${req.socket.remoteAddress} | ${req.method} ${req.originalUrl} param : ${JSON.stringify(req.params)} redirect => /home`);
     res.status(404).redirect("/home");
@@ -243,7 +247,7 @@ const connectedWebsockets = {};
 WSServer.on("connection", async (ws, request) => {
     for (const header of request.headers.cookie.split(";")) {
         if (header.includes("connect.sid")) {
-            const session = header.replace("connect.sid=s%3A", "").split(".")[0];
+            const session = header.replace("connect.sid=s%3A", "").split(".")[0].trim();
             connectedWebsockets[session] = ws;
             ws.id = session;
             logger.info(`[0033] WebSocket [${session}] connected!!`);

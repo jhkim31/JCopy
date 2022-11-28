@@ -27,6 +27,8 @@ function RoomComponent(props: {ws: WebSocket}) {
     const [textId, setTextId] = useState('');
     const [text, setText] = useState('');
     const [roomId, setRoomId] = useState('');
+    const [roomInfo, setRoomInfo] = useState({});
+    const [session, setSession] = useState('');
 
     useEffect(() => {
         const pathRoomId = window.location.pathname.replace('/room/', '');
@@ -37,6 +39,7 @@ function RoomComponent(props: {ws: WebSocket}) {
                 setTextId(d.text.id);
                 setText(d.text.value);
                 setRoomId(d.roomId);
+                setSession(d.session)
             } else {
                 alert('해당 방이 없습니다!');
                 return navigate('/home');
@@ -69,6 +72,7 @@ function RoomComponent(props: {ws: WebSocket}) {
     return (
         <Room>
             <RoomID>{roomId}</RoomID>
+            <div>{session}</div>
             <TextField onChange={textHandler} value={text}/>
             <div id="fileList">
                 {fileList.map((item) => {
