@@ -67,6 +67,14 @@ const logger = winston.createLogger({
         //? format: combine() 에서 정의한 timestamp와 label 형식값이 logFormat에 들어가서 정의되게 된다. level이나 message는 콘솔에서 자동 정의
     ),
     transports: [
+        new winstonDaily({
+            level: "debug", // error 레벨에선
+            datePattern: "YYYY-MM-DD",
+            dirname: debugDir, // /logs/error 하위에 저장
+            filename: `%DATE%.gateway.debug.log`, // 에러 로그는 2020-05-28.error.log 형식으로 저장
+            maxFiles: 30,
+            zippedArchive: true,
+        }),
 
         new winstonDaily({
             level: "info", // info 레벨에선
@@ -85,21 +93,12 @@ const logger = winston.createLogger({
             maxFiles: 30,
             zippedArchive: true,
         }),
-
-        new winstonDaily({
-            level: "debug", // error 레벨에선
-            datePattern: "YYYY-MM-DD",
-            dirname: debugDir, // /logs/error 하위에 저장
-            filename: `%DATE%.gateway.debug.log`, // 에러 로그는 2020-05-28.error.log 형식으로 저장
-            maxFiles: 30,
-            zippedArchive: true,
-        }),
     ],
 });
 
 logger.add(
     new winston.transports.Console({
-        level: "info",
+        level: "debug",
         format: format.combine(
             format.label({label: "Gateway"}),
             format.timestamp({
@@ -109,7 +108,6 @@ logger.add(
             logFormat
         ),
     })
-
-}
+);
 
 module.exports = logger;

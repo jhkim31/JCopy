@@ -1,7 +1,7 @@
 develop:
   kafka:
     brokers:
-      - localhost:9092
+      - 15.165.161.85:9092
     groupid:
       gateway: jcopy-gateway
       room: ''
