@@ -15,7 +15,7 @@ if (process.env.NODE_ENV == "production") {
     const file = fs.readFileSync("./config.yaml", "utf8");
     config = YAML.parse(file).deploy;
 }
-logger.info(`[0001] config  \n${YAML.stringify(config)}`);
+logger.info(`[2-001-00] config  \n${YAML.stringify(config)}`);
 
 const PROTO_FILE = config.grpc.proto.path;
 
@@ -31,20 +31,17 @@ const RoomProto = grpc.loadPackageDefinition(pkgDefs);
 const StorageService = grpc.loadPackageDefinition(pkgDefs).StorageService;
 
 const gRPCServer = new grpc.Server();
-const gRPCClient = new StorageService(
-    `${config.grpc.StorageService.host}:${config.grpc.StorageService.port}`,
-    grpc.credentials.createInsecure()
-);
+const gRPCClient = new StorageService(`${config.grpc.StorageService.host}:${config.grpc.StorageService.port}`, grpc.credentials.createInsecure());
 
 const dbUrl = `mongodb://${config.mongodb.user}:${config.mongodb.pwd}@${config.mongodb.host}:${config.mongodb.port}`;
 
 mongoose
     .connect(dbUrl, {dbName: config.mongodb.dbName})
     .then((e) => {
-        logger.info("[0002] mongodb connected");
+        logger.info("[2-002-01] mongodb connected");
     })
     .catch((e) => {
-        logger.error(`[0003] mongodb disconnect ${e}`);
+        logger.error(`[2-002-11] mongodb disconnect ${e}`);
     });
 
 const RoomSchema = new mongoose.Schema({
@@ -60,24 +57,28 @@ const Room = mongoose.model("Room", RoomSchema);
 
 gRPCServer.addService(RoomProto.RoomService.service, {
     CreateRoom: async (CreateRoomRequest, responseCallBack) => {
-        logger.debug(`[0004] gRPC Recv CreateRoomRequest : ${JSON.stringify(CreateRoomRequest.request)}`);
-        try {
-            const roomId = parseInt(Math.random() * 10000)
-                .toString()
-                .padStart(4, "0");
+        logger.debug(`[2-101-00] gRPC Recv CreateRoomRequest : ${JSON.stringify(CreateRoomRequest.request)}`);
+        const roomId = parseInt(Math.random() * 10000)
+            .toString()
+            .padStart(4, "0");
 
-            const CreateTextRequest = {
-                id: uuidv4(),
-                expireTime: CreateRoomRequest.request.expireTime,
-            };
+        const CreateTextRequest = {
+            id: uuidv4(),
+            expireTime: CreateRoomRequest.request.expireTime,
+        };
 
-            logger.debug(`[0005] gRPC Send CreateTextRequest : ${JSON.stringify(CreateTextRequest)}`);
-            gRPCClient.CreateText(CreateTextRequest, async (error, CreateTextResponse) => {
-                if (error) {
-                    logger.error(`[0006] gRPC CreateText Error RPC_ID : ${CreateTextRequest.id}: ${error}`);
-                } else {
-                    logger.debug(`[0007] gRPC Recv CreateTextResponse : ${JSON.stringify(CreateTextResponse)}`);
-                    const textId = CreateTextResponse.textId;
+        logger.debug(`  [2-102-00] gRPC Request CreateTextRequest : ${JSON.stringify(CreateTextRequest)}`);
+        gRPCClient.CreateText(CreateTextRequest, CreateTextCB);
+
+        async function CreateTextCB(error, CreateTextResponse) {
+            if (error) {
+                logger.error(`  [2-102-51] gRPC CreateText Error RPC_ID : ${CreateTextRequest.id}: ${error}`);
+                responseCallBack(error, null);
+            } else {
+                logger.debug(`  [2-102-01] gRPC Response CreateTextResponse : ${JSON.stringify(CreateTextResponse)}`);
+                const textId = CreateTextResponse.textId;
+
+                try{
                     const roomData = {
                         roomId: roomId,
                         sessions: [CreateRoomRequest.request.clientSession],
@@ -85,12 +86,16 @@ gRPCServer.addService(RoomProto.RoomService.service, {
                         fileIds: [],
                         expireAt: new Date(CreateRoomRequest.request.expireTime),
                         expireTime: new Date(CreateRoomRequest.request.expireTime),
-                    }
-                    logger.debug(`[0008] Mongo Create Room [${roomId}] room : ${JSON.stringify(roomData)}`);
-                    const room = new Room(roomData);
+                    };
 
+                    const room = new Room(roomData);
+                    logger.debug(`    [2-701-00] Mongo Create Room [${roomId}] room : ${JSON.stringify(roomData)}`);
                     await room.save().then((result) => {
-                        logger.info(`[0009] Mongo Create Room[${roomId}] res : ${JSON.stringify(result)}`);
+                        if (result.roomId == roomId){
+                            logger.info(`    [2-701-01] Mongo Create Room[${roomId}]`);
+                        } else {
+                            logger.error(`    [2-701-51] Mongo Create Room Error [${roomId}]`);
+                        }
                     });
 
                     const CreateRoomResponse = {
@@ -99,35 +104,36 @@ gRPCServer.addService(RoomProto.RoomService.service, {
                         textId: textId,
                         fileIds: [],
                     };
-                    logger.debug(`[0010] gRPC Send CreateRoomResponse : ${JSON.stringify(CreateRoomResponse)}`);
+                    logger.debug(`[2-101-21] gRPC Send CreateRoomResponse : ${JSON.stringify(CreateRoomResponse)}`);
                     responseCallBack(null, CreateRoomResponse);
+                } catch (error) {
+                    logger.error(`[2-101-71] gRPC Error CreateRoomResponse : ${error}`);
+                    responseCallBack(error, null);
                 }
-            });
-        } catch (error) {
-            logger.error(`[0011] Error Processing CreateRoom.... ${error}`);
-            responseCallBack(error, null);
+
+            }
         }
     },
     JoinRoom: async (JoinRoomRequest, responseCallBack) => {
-        logger.debug(`[0012] gRPC Recv JoinRoomRequest : ${JSON.stringify(JoinRoomRequest.request)}`);
+        logger.debug(`[2-104-00] gRPC Recv JoinRoomRequest : ${JSON.stringify(JoinRoomRequest.request)}`);
         try {
             const id = JoinRoomRequest.request.id;
             const roomId = JoinRoomRequest.request.roomId;
             const clientSession = JoinRoomRequest.request.clientSession;
 
+            logger.debug(`  [2-702-00] Mongo Update Room ${roomId}`);
             await Room.updateOne({roomId: roomId}, {$addToSet: {sessions: clientSession}}).then((res) => {
-                if (res.modifiedCount == 0){
-                    logger.warn(`[0013] RPC_ID : ${id} | Mongo Not Search Room : ${roomId}`);
+                if (res.modifiedCount == 0) {
+                    logger.warn(`  [2-702-51] RPC_ID : ${id} | Mongo Not Search Room : ${roomId}`);
                 } else {
-                    logger.debug(`[0014] RPC_ID : ${id} | Mongo Update Room [${roomId}] (Add Session) ${JSON.stringify(res)}`);
+                    logger.debug(`[2-702-01] RPC_ID : ${id} | Mongo Update Room [${roomId}] (Add Session) ${JSON.stringify(res)}`);
                 }
-
             });
 
             const room = await Room.findOne({roomId: roomId});
             let JoinRoomResponse = {};
 
-            if (room){
+            if (room) {
                 JoinRoomResponse = {
                     id: id,
                     result: "ok",
@@ -140,20 +146,20 @@ gRPCServer.addService(RoomProto.RoomService.service, {
                     id: id,
                     result: "Not Found Room",
                     roomId: roomId,
-                    textId: '',
-                    fileIds: '',
+                    textId: "",
+                    fileIds: "",
                 };
             }
 
-            logger.debug(`[0015] gRPC Send JoinRoomResponse : ${JSON.stringify(JoinRoomResponse)}`);
+            logger.debug(`[2-104-21] gRPC Send JoinRoomResponse : ${JSON.stringify(JoinRoomResponse)}`);
             responseCallBack(null, JoinRoomResponse);
         } catch (error) {
-            logger.error(`[0016] Error Processing JoinRoom RPC_ID : ${JoinRoomRequest.request.id} | ${error}`);
+            logger.error(`[2-104-71] Error Processing JoinRoom RPC_ID : ${JoinRoomRequest.request.id} | ${error}`);
             responseCallBack(error, null);
         }
     },
     GetJoinedSessions: async (GetJoinedSessionsRequest, responseCallBack) => {
-        logger.debug(`[0017] gRPC Recv GetJoinedSessionsRequest : ${JSON.stringify(GetJoinedSessionsRequest.request)}`);
+        logger.debug(`[2-106-00] gRPC Recv GetJoinedSessionsRequest : ${JSON.stringify(GetJoinedSessionsRequest.request)}`);
         try {
             const id = GetJoinedSessionsRequest.request.id;
             const roomId = GetJoinedSessionsRequest.request.roomId;
@@ -163,12 +169,13 @@ gRPCServer.addService(RoomProto.RoomService.service, {
             const GetJoinedSessionsResponse = {
                 id: id,
                 roomId: room.roomId,
+
                 clientSessions: room.sessions,
             };
-            logger.debug(`[0018] gRPC Send GetJoinedSessionsResponse : ${JSON.stringify(GetJoinedSessionsResponse)}`);
+            logger.debug(`[2-106-21] gRPC Send GetJoinedSessionsResponse : ${JSON.stringify(GetJoinedSessionsResponse)}`);
             responseCallBack(null, GetJoinedSessionsResponse);
         } catch (error) {
-            logger.error(`[0019] Error Processing GetJoinSessions RPC_ID : ${GetJoinedSessionsRequest.request.id} | ${error}`);
+            logger.error(`[2-106-71] Error Processing GetJoinSessions RPC_ID : ${GetJoinedSessionsRequest.request.id} | ${error}`);
             responseCallBack(error, null);
         }
     },
@@ -176,6 +183,6 @@ gRPCServer.addService(RoomProto.RoomService.service, {
 
 //start the Server
 gRPCServer.bindAsync("0.0.0.0:5000", grpc.ServerCredentials.createInsecure(), (error, port) => {
-    logger.info(`[0000] listening on port ${port}`);
+    logger.info(`[2] listening on port ${port}`);
     gRPCServer.start();
 });
