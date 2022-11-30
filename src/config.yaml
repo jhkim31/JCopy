@@ -3,9 +3,9 @@ develop:
     brokers:
       - 13.125.246.240:9092
     groupid:
-      gateway: jcopy-gateway
+      gateway: jcopy-gateway-test
       room: ''
-      storage: jcopy-storage
+      storage: jcopy-storage-test
   redis:
     host: localhost
     port: 6379

@@ -9,7 +9,7 @@ const Room = styled.div`
 `;
 
 const RoomID = styled.div`
-    height: 70px;
+    height: 50px;
     background: yellow;
 `;
 
@@ -19,12 +19,22 @@ const TextField = styled.textarea`
     margin: 10px;
 `;
 
-
 function RoomComponent(props: {ws: WebSocket}) {
     const navigate = useNavigate();
     const ws = props.ws;
     const fileTypes = ["JPG", "PNG", "GIF"];
-    const [roomInfo, setRoomInfo] = useState({
+    interface iRoomInfo {
+        send: boolean,
+        text: {
+            id: String,
+            value: String
+        },
+        files: String[],
+        roomId: String,
+        session: String
+    }
+    const roomInfo = useRef<iRoomInfo>({
+        send: false,
         text: {
             id: "",
             value: "",
@@ -33,6 +43,10 @@ function RoomComponent(props: {ws: WebSocket}) {
         roomId: "",
         session: "",
     });
+    const [textValue, setTextValue] = useState<string>("");
+    const [roomId, setRoomId] = useState<string>("");
+    const [session, setSession] = useState<string>("");
+    const [files,setFiles] = useState<string[]>([]);
 
     useEffect(() => {
         const pathRoomId = window.location.pathname.replace("/room/", "");
@@ -40,44 +54,44 @@ function RoomComponent(props: {ws: WebSocket}) {
             .then((d) => d.json())
             .then((d) => {
                 if (d.error == 0) {
-                    setRoomInfo((prev) => {
-                        const current = {...prev};
-                        current.text = d.text;
-                        current.roomId = d.roomId;
-                        current.session = d.session;
-                        return current;
-                    });
+                    setTextValue(d.text.value);
+                    setRoomId(d.roomId);
+                    setSession(d.session);
+                    roomInfo.current.text = d.text;
+                    roomInfo.current.session = d.session;
+                    roomInfo.current.roomId = d.roomId;
                 } else {
                     alert("해당 방이 없습니다!");
                     return navigate("/home");
                 }
             });
+
         setInterval(() => {
             const ping = {
-                ping: 'ping'
-            }
+                ping: "ping",
+            };
             ws.send(JSON.stringify(ping));
         }, 1000 * 10);
 
+        setInterval(() => {
+            if (roomInfo.current.send){
+                ws.send(JSON.stringify(roomInfo.current));
+                roomInfo.current.send = false;
+            }
+        }, 1000);
+
         ws.onmessage = (evt) => {
-            setRoomInfo((prev) => {
-                const current = {...prev};
-                current.text.value = evt.data;
-                return current;
-            });
+            setTextValue(evt.data);
+            roomInfo.current.text.value = evt.data;
         };
     }, []);
 
     const [fileList, setFileList] = useState<File[]>([]);
 
     function textHandler(e: React.ChangeEvent<HTMLTextAreaElement>) {
-        setRoomInfo((prev) => {
-            const current = {...prev};
-            current.text.value = e.target.value;
-            return current;
-        });
-
-        ws.send(JSON.stringify(roomInfo));
+        setTextValue(e.target.value);
+        roomInfo.current.text.value = e.target.value;
+        roomInfo.current.send = true;
     }
 
     const handleChange = (file: File) => {
@@ -88,15 +102,19 @@ function RoomComponent(props: {ws: WebSocket}) {
     };
     return (
         <Room>
-            <RoomID>{roomInfo.roomId}</RoomID>
-            <div>{roomInfo.session}</div>
-            <TextField onChange={textHandler} value={roomInfo.text.value} />
+            <RoomID>
+                <div>
+                    {roomId}
+                </div>
+                <div>{session}</div>
+            </RoomID>
+            <TextField onChange={textHandler} value={textValue} />
             <div id="fileList">
                 {fileList.map((item) => {
                     return <div key={Math.random()}>{item.toString()}</div>;
                 })}
             </div>
-            <FileUploader handleChange={handleChange} name="file" types={fileTypes} />
+            {/* <FileUploader handleChange={handleChange} name="file" types={fileTypes} /> */}
         </Room>
     );
 }

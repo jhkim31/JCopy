@@ -257,22 +257,24 @@ WSServer.on("connection", async (ws, request) => {
         if (wsMsg.ping == "ping") {
             ws.pong("pong");
         } else {
-            const kafkaMsg = {
-                id: uuidv4(),
-                roomId: wsMsg.roomId,
-                textId: wsMsg.text.id,
-                textValue: wsMsg.text.value,
-                clientSession: ws.id,
-            };
-            const kafkaData = {topic: "ChangeText", messages: [{value: JSON.stringify(kafkaMsg)}]};
-            logger.debug(`  [1-201-00] Produce ChangeText ${JSON.stringify(kafkaMsg)}`);
-            producer.send(kafkaData).then((d) => {
-                if (d){
-                    logger.debug(`  [1-201-01] Produce ChangeText OK ${JSON.stringify(d)}`);
-                } else {
-                    logger.debug(`  [1-201-51] Produce ChangeText error ${d}`);
-                }
-            });
+            if (wsMsg.roomId != ""){
+                const kafkaMsg = {
+                    id: uuidv4(),
+                    roomId: wsMsg.roomId,
+                    textId: wsMsg.text.id,
+                    textValue: wsMsg.text.value,
+                    clientSession: ws.id,
+                };
+                const kafkaData = {topic: "ChangeText", messages: [{value: JSON.stringify(kafkaMsg)}]};
+                logger.debug(`  [1-201-00] Produce ChangeText ${JSON.stringify(kafkaMsg)}`);
+                producer.send(kafkaData).then((d) => {
+                    if (d){
+                        logger.debug(`  [1-201-01] Produce ChangeText OK ${JSON.stringify(d)}`);
+                    } else {
+                        logger.debug(`  [1-201-51] Produce ChangeText error ${d}`);
+                    }
+                });
+            }
         }
     });
 
