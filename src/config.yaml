@@ -1,7 +1,7 @@
 develop:
   kafka:
     brokers:
-      - 15.165.161.85:9092
+      - 13.125.246.240:9092
     groupid:
       gateway: jcopy-gateway
       room: ''

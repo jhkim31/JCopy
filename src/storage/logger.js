@@ -24,7 +24,7 @@ if (process.env.NODE_ENV == "production") {
 }
 //* log 출력 포맷 정의 함수
 const logFormat = printf(({level, message, label, timestamp}) => {
-    return `${timestamp} [${level}] ${label} : ${message}`; // 날짜 [시스템이름] 로그레벨 메세지
+    return `${timestamp} [${level}] : ${message}`; // 날짜 [시스템이름] 로그레벨 메세지
 });
 /*
 new winstonDaily({

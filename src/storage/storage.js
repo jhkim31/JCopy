@@ -24,14 +24,14 @@ const kafka = new Kafka({
 });
 const producer = kafka.producer({createPartitioner: Partitioners.LegacyPartitioner});
 const consumer = kafka.consumer({groupId: config.kafka.groupid.storage});
-logger.info(`[0001] config  \n${YAML.stringify(config)}`);
+logger.info(`[3-001-01] config  \n${YAML.stringify(config)}`);
 (async () => {
     try {
         await producer.connect();
         await consumer.connect();
-        logger.info("[0002] kafka connected!");
+        logger.info("[3-002-01] kafka connected!");
     } catch (e) {
-        logger.error(`[0003] kafka disconnected ${e}`);
+        logger.error(`[3-002-11] kafka disconnected ${e}`);
     }
 })();
 
@@ -39,9 +39,9 @@ const redisUrl = `redis://${config.redis.host}:${config.redis.port}`;
 const redisClient = createClient({url: redisUrl});
 try {
     redisClient.connect();
-    logger.info("[0004] redis connceted!");
+    logger.info("[3-003-01] redis connceted!");
 } catch (e) {
-    logger.error(`[0005] Redis disconnected ${e}`);
+    logger.error(`[3-003-11] Redis disconnected ${e}`);
 }
 
 
@@ -59,66 +59,86 @@ const gRPCServer = new grpc.Server();
 
 gRPCServer.addService(StorageProto.StorageService.service, {
     CreateText: async (CreateTextRequest, responseCallBack) => {
-        logger.debug(`[0006] gRPC Recv CreateTextRequest : ${JSON.stringify(CreateTextRequest.request)}`);
+        logger.debug(`[3-102-00] gRPC Recv CreateTextRequest : ${JSON.stringify(CreateTextRequest.request)}`);
         try {
             const id = CreateTextRequest.request.id;
             const expireTime = new Date(CreateTextRequest.request.expireTime);
             const textId = 'text:' + uuidv4();
-            logger.debug(`[0007] Set Redis ${textId} : ""`);
-            console.log(expireTime.getTime());
-            await redisClient.set(textId, "", {PXAT: expireTime.getTime()});
+            logger.debug(`  [3-703-00] Set Redis ${textId} : ""`);
+            await redisClient.set(textId, "", {PXAT: expireTime.getTime()}).then(d => {
+                if (d){
+                    logger.debug(`  [3-703-01] Set Redis ${textId} : ""`);
+                } else {
+                    logger.error(`  [3-703-51] Set Redis Error textId : ${textId}`);
+                }
+            });
             const CreateTextResponse = {
                 id: id,
                 textId: textId,
             };
-            logger.debug(`[0008] gRPC Send CreateTextResponse : ${JSON.stringify(CreateTextResponse)}`);
+            logger.debug(`[3-102-21] gRPC Send CreateTextResponse : ${JSON.stringify(CreateTextResponse)}`);
             responseCallBack(null, CreateTextResponse);
         } catch (error) {
-            logger.error(`[0009] Error Processing CreateText... RPC_ID : ${CreateTextRequest.request.id} | ${error}`);
+            logger.error(`[3-102-71] Error Processing CreateText... RPC_ID : ${CreateTextRequest.request.id} | ${error}`);
             responseCallBack(error, null);
         }
     },
 
     GetText: async (GetTextRequest, responseCallBack) => {
-        logger.debug(`[0010] gRPC Recv GetTextRequest : ${JSON.stringify(GetTextRequest.request)}`);
+        logger.debug(`[3-103-00] gRPC Recv GetTextRequest : ${JSON.stringify(GetTextRequest.request)}`);
         try {
             const id = GetTextRequest.request.id;
-            const textValue = await redisClient.get(GetTextRequest.request.textId);
-            logger.debug(`[0011] Get Redis ${GetTextRequest.request.textId} : ${textValue}`);
+            const textId = GetTextRequest.request.textId
+            logger.debug(`[3-704-00] Get Redis ${textId}`);
+            const textValue = await redisClient.get(textId).then(d => {
+                if (d){
+                    logger.debug(`  [3-704-01] Get Redis ${textId} : ""`);
+                } else {
+                    logger.error(`  [3-704-51] Get Redis Error textId : ${textId}`);
+                }
+            })
+
             const GetTextResponse = {
                 id: id,
                 textValue: textValue,
             };
-            logger.debug(`[0012] gRPC Send GetTextResponse : ${JSON.stringify(GetTextResponse)}`);
+            logger.debug(`[3-103-21] gRPC Send GetTextResponse : ${JSON.stringify(GetTextResponse)}`);
             responseCallBack(null, GetTextResponse);
         } catch (error) {
-            logger.error(`[0013] Error Processing GetText... RPC_ID : ${GetTextRequest.request.id} | ${error}`);
+            logger.error(`[3-103-71] Error Processing GetText... RPC_ID : ${GetTextRequest.request.id} | ${error}`);
             responseCallBack(error, null);
         }
     },
 
     GetFiles: async (GetFilesRequest, responseCallBack) => {
-        logger.debug(`[0014] gRPC Recv GetFilesRequest : ${JSON.stringify(GetFilesRequest.request)}`);
+        logger.debug(`[3-105-00] gRPC Recv GetFilesRequest : ${JSON.stringify(GetFilesRequest.request)}`);
         try {
             const id = GetFilesRequest.request.id;
-            const textValue = await redisClient.get(GetFilesRequest.request.textId);
-            logger.debug(`[0015] RPC_ID : ${id} | Get Redis Text : {${GetFilesRequest.request.textId} : ${textValue}}`);
-            const fileNames = [];
+            const textId = GetFilesRequest.request.textId;
+            logger.debug(`  [3-705-00] RPC_ID : ${id} | Get Redis Text : ${textId}`);
+            const textValue = await redisClient.get(textId).then(d => {
+                if (d){
+                    logger.debug(`  [3-705-01] Get Text From Redis ${textId} : ${textValue}`);
+                } else {
+                    logger.error(`  [3-705-51] Get Redis Error textId : ${textId}`);
+                }
+            })
 
+            const fileNames = [];
+            logger.debug(`  [3-706-00] RPC_ID : ${id} | Get Redis ${GetFilesRequest.request.fileIds} : ${fileNames}`);
             for (const fileId in GetFilesRequest.request.fileIds) {
                 fileNames.push(await redisClient.get(fileId));
             }
-            logger.debug(`[0016] RPC_ID : ${id} | Get Redis ${GetFilesRequest.request.fileIds} : ${fileNames}`);
 
             const GetFilesResponse = {
                 id: id,
                 textValue: textValue,
                 fileNames: fileNames,
             };
-            logger.debug(`[0017] gRPC Send GetFilesResponse : ${JSON.stringify(GetFilesResponse)}`);
+            logger.debug(`[3-105-21] gRPC Send GetFilesResponse : ${JSON.stringify(GetFilesResponse)}`);
             responseCallBack(null, GetFilesResponse);
         } catch (error) {
-            logger.error(`[0018] Error Processing GetFiles... RPC_ID : ${GetFilesRequest.request.id} | ${error}`);
+            logger.error(`[3-105-71] Error Processing GetFiles... RPC_ID : ${GetFilesRequest.request.id} | ${error}`);
             responseCallBack(error, null);
         }
     },
@@ -126,20 +146,27 @@ gRPCServer.addService(StorageProto.StorageService.service, {
 
 async function kafkaConsumerListener() {
     await consumer.subscribe({topics: ["ChangeText"]});
-    logger.debug('[0019] Kafka Subscribe Topics "ChangeText"');
+    logger.debug('[3-301-00] Kafka Subscribe Topics "ChangeText"');
     await consumer.run({
         eachMessage: async ({topic, partition, message, heartbeat, pause}) => {
-            logger.debug(`[0020] Consume Message :[${topic}] ${message.value}`);
+            logger.debug(`[3-302-00] Consume Message :[${topic}] ${message.value}`);
             let msg = {};
             try {
                 msg = JSON.parse(message.value.toString());
+                logger.debug(`[3-302-01] Parsing Kafka Message : ${JSON.stringify(msg)}`);
             } catch (e) {
-                logger.error(`[0021] Error Parsing Kafka Message ... ${e} | msg : ${message.value.toString()}`);
+                logger.error(`[3-302-51] Error Parsing Kafka Message ... ${e} | msg : ${message.value.toString()}`);
             }
             if (msg != {}) {
                 if (topic == "ChangeText") {
-                    await redisClient.set(msg.textId, msg.textValue, {KEEPTTL: true});
-                    logger.debug(`[0022] Set Redis ${msg.textId} : ${msg.textValue}`);
+                    logger.debug(`[3-707-00] Set Redis ${msg.textId} : ${msg.textValue}`);
+                    await redisClient.set(msg.textId, msg.textValue, {KEEPTTL: true}).then(d => {
+                        if (d){
+                            logger.debug(`  [3-707-01] Set Redis ${msg.textId} : ${msg.textValue}`);
+                        } else {
+                            logger.error(`  [3-707-51] Set Redis Error textId : ${msg.textId}`);
+                        }
+                    });
                     const kafkaMsg = {
                         roomId: msg.roomId,
                         textId: msg.textId,
@@ -150,8 +177,14 @@ async function kafkaConsumerListener() {
                         topic: "TextChanged",
                         messages: [{value: JSON.stringify(kafkaMsg)}],
                     };
-                    logger.debug(`[0023] Produce [Topic : TextChanged] ${JSON.stringify(kafkaMsg)}`);
-                    await producer.send(kafkaData);
+                    logger.debug(`  [3-202-00] Produce [Topic : TextChanged] ${JSON.stringify(kafkaMsg)}`);
+                    producer.send(kafkaData).then(d => {
+                        if (d){
+                            logger.debug(`  [3-202-01] Produce [Topic : TextChanged] ${JSON.stringify(d)}`);
+                        } else {
+                            logger.error(`  [3-202-51] Produce [Topic : TextChanged] ${JSON.stringify(d)}`);
+                        }
+                    })
                 }
             }
         },
