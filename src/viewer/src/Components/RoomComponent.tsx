@@ -22,16 +22,15 @@ const TextField = styled.textarea`
 function RoomComponent(props: {ws: WebSocket}) {
     const navigate = useNavigate();
     const ws = props.ws;
-    const fileTypes = ["JPG", "PNG", "GIF"];
     interface iRoomInfo {
-        send: boolean,
+        send: boolean;
         text: {
-            id: String,
-            value: String
-        },
-        files: String[],
-        roomId: String,
-        session: String
+            id: String;
+            value: String;
+        };
+        files: String[];
+        roomId: String;
+        session: String;
     }
     const roomInfo = useRef<iRoomInfo>({
         send: false,
@@ -46,7 +45,7 @@ function RoomComponent(props: {ws: WebSocket}) {
     const [textValue, setTextValue] = useState<string>("");
     const [roomId, setRoomId] = useState<string>("");
     const [session, setSession] = useState<string>("");
-    const [files,setFiles] = useState<string[]>([]);
+    const [files, setFiles] = useState<string[]>([]);
 
     useEffect(() => {
         const pathRoomId = window.location.pathname.replace("/room/", "");
@@ -67,26 +66,40 @@ function RoomComponent(props: {ws: WebSocket}) {
             });
 
         setInterval(() => {
-            const ping = {
-                ping: "ping",
+            const heartbeat = {
+                type: "heartbeat",
             };
-            ws.send(JSON.stringify(ping));
+            ws.send(JSON.stringify(heartbeat));
         }, 1000 * 10);
 
         setInterval(() => {
-            if (roomInfo.current.send){
-                ws.send(JSON.stringify(roomInfo.current));
+            if (roomInfo.current.send && roomInfo.current.roomId != "") {
+                // text change event
+                ws.send(
+                    JSON.stringify({
+                        type: "text",
+                        roomId: roomInfo.current.roomId,
+                        textId: roomInfo.current.text.id,
+                        textValue: roomInfo.current.text.value,
+                    })
+                );
                 roomInfo.current.send = false;
             }
         }, 1000);
 
         ws.onmessage = (evt) => {
-            setTextValue(evt.data);
-            roomInfo.current.text.value = evt.data;
+            const msg = JSON.parse(evt.data);
+            switch (msg.type) {
+                case "text":
+                    setTextValue(msg.msg);
+                    roomInfo.current.text.value = msg.msg;
+                    break;
+                case "file":
+                    setFiles(msg.fileIds);
+                    break;
+            }
         };
     }, []);
-
-    const [fileList, setFileList] = useState<File[]>([]);
 
     function textHandler(e: React.ChangeEvent<HTMLTextAreaElement>) {
         setTextValue(e.target.value);
@@ -95,26 +108,49 @@ function RoomComponent(props: {ws: WebSocket}) {
     }
 
     const handleChange = (file: File) => {
-        setFileList((prev) => {
-            prev.push(file);
-            return prev;
+        const form = new FormData();
+        form.append("file", file);
+        const url = `http://${window.location.host}/upload?room=${roomId}&name=${file.name}`
+        setFiles((oldArr) => {
+            const newArr = [...oldArr];
+            newArr.push(file.name);
+            return newArr;
+        });
+
+        fetch(url, {
+            method: "PUT",
+            body: form,
         });
     };
+
+    function deleteFile (filename:String){
+        const url = `http://${window.location.host}/file?room=${roomId}&name=${filename}`;
+        fetch(url, {
+            method: "DELETE"
+        })
+        .then(d => console.log(d));
+    }
     return (
         <Room>
             <RoomID>
-                <div>
-                    {roomId}
-                </div>
+                <div>{roomId}</div>
                 <div>{session}</div>
             </RoomID>
             <TextField onChange={textHandler} value={textValue} />
             <div id="fileList">
-                {fileList.map((item) => {
-                    return <div key={Math.random()}>{item.toString()}</div>;
+                {files.map((item) => {
+                    const url = `https://jcopy-storage.s3.ap-northeast-2.amazonaws.com/${roomId}/${item}`;
+                    return (
+                        <div>
+                            <span onClick={() => deleteFile(item)}>x </span>
+                            <a href={url} key={Math.random()} download>
+                                {item}
+                            </a>
+                        </div>
+                    );
                 })}
             </div>
-            {/* <FileUploader handleChange={handleChange} name="file" types={fileTypes} /> */}
+            <FileUploader handleChange={handleChange} name="file" />
         </Room>
     );
 }
