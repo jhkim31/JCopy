@@ -5,6 +5,7 @@ const mongoose = require("mongoose");
 const grpc = require("@grpc/grpc-js");
 const protoLoader = require("@grpc/proto-loader");
 const {v4: uuidv4} = require("uuid");
+const {Kafka, Partitioners, logLevel} = require("kafkajs");
 
 let config = {};
 if (process.env.NODE_ENV == "develop") {
@@ -25,6 +26,13 @@ const options = {
     defaults: true,
     oneofs: true,
 };
+const kafka = new Kafka({
+    brokers: config.kafka.brokers,
+    logLevel: logLevel.ERROR,
+});
+
+const producer = kafka.producer({createPartitioner: Partitioners.LegacyPartitioner});
+const consumer = kafka.consumer({groupId: config.kafka.groupid.room});
 
 const pkgDefs = protoLoader.loadSync(PROTO_FILE, options);
 const RoomProto = grpc.loadPackageDefinition(pkgDefs);
@@ -34,6 +42,11 @@ const gRPCServer = new grpc.Server();
 const gRPCClient = new StorageService(`${config.grpc.StorageService.host}:${config.grpc.StorageService.port}`, grpc.credentials.createInsecure());
 
 const dbUrl = `mongodb://${config.mongodb.user}:${config.mongodb.pwd}@${config.mongodb.host}:${config.mongodb.port}`;
+(async () => {
+    await producer.connect();
+    await consumer.connect();
+    logger.info("[1-002-01] kafka connected");
+})();
 
 mongoose
     .connect(dbUrl, {dbName: config.mongodb.dbName})
@@ -48,7 +61,8 @@ const RoomSchema = new mongoose.Schema({
     roomId: String,
     sessions: [String],
     textId: String,
-    fildIds: [String],
+    leftStorage: Number,
+    fileIds: [String],
     expireAt: {type: Date, expires: 100},
     expireTime: Date,
 });
@@ -78,11 +92,12 @@ gRPCServer.addService(RoomProto.RoomService.service, {
                 logger.debug(`  [2-102-01] gRPC Response CreateTextResponse : ${JSON.stringify(CreateTextResponse)}`);
                 const textId = CreateTextResponse.textId;
 
-                try{
+                try {
                     const roomData = {
                         roomId: roomId,
                         sessions: [CreateRoomRequest.request.clientSession],
                         textId: textId,
+                        leftStorage: 10_000_000,
                         fileIds: [],
                         expireAt: new Date(CreateRoomRequest.request.expireTime),
                         expireTime: new Date(CreateRoomRequest.request.expireTime),
@@ -91,7 +106,7 @@ gRPCServer.addService(RoomProto.RoomService.service, {
                     const room = new Room(roomData);
                     logger.debug(`    [2-701-00] Mongo Create Room [${roomId}] room : ${JSON.stringify(roomData)}`);
                     await room.save().then((result) => {
-                        if (result.roomId == roomId){
+                        if (result.roomId == roomId) {
                             logger.info(`    [2-701-01] Mongo Create Room[${roomId}]`);
                         } else {
                             logger.error(`    [2-701-51] Mongo Create Room Error [${roomId}]`);
@@ -110,7 +125,6 @@ gRPCServer.addService(RoomProto.RoomService.service, {
                     logger.error(`[2-101-71] gRPC Error CreateRoomResponse : ${error}`);
                     responseCallBack(error, null);
                 }
-
             }
         }
     },
@@ -181,8 +195,80 @@ gRPCServer.addService(RoomProto.RoomService.service, {
     },
 });
 
+async function kafkaConsumerListener() {
+    consumer.subscribe({topics: ["UploadFile", "DeleteFile"]}).then((d) => console.log("subscribe : ", d));
+
+    await consumer.run({
+        eachMessage: async ({topic, partition, message, heartbeat, pause}) => {
+            let msg = {};
+            try {
+                msg = JSON.parse(message.value.toString());
+            } catch (e) {}
+            console.log(msg);
+
+            if (msg != {}) {
+                let roomId = ""
+                let room = null;
+                switch (topic) {
+                    case "UploadFile":
+                        roomId = msg.roomId;
+                        room = await Room.findOne({roomId: roomId});
+                        if (room == null){
+                            return;
+                        }
+                        console.log(roomId, room);
+                        const leftStorage = room.leftStorage;
+                        console.log(room);
+
+                        await Room.updateOne(
+                            {roomId: roomId},
+                            {
+                                $push: {fileIds: msg.name},
+                                $set: {leftStorage: leftStorage - msg.size},
+                            }
+                        );
+                        room = await Room.findOne({roomId: roomId});
+
+                        const kafkaMsg = {
+                            id: uuidv4(),
+                            roomId: roomId,
+                            clientSession: room.sessions,
+                            fileIds: room.fileIds,
+                        };
+                        const kafkaData = {topic: "UpdateFiles", messages: [{value: JSON.stringify(kafkaMsg)}]};
+                        logger.debug(`  [1-201-00] Produce ChangeText ${JSON.stringify(kafkaMsg)}`);
+                        producer.send(kafkaData);
+                        break;
+
+                    case "DeleteFile":
+                        roomId = msg.roomId;
+                        const filename = msg.name;
+
+                        await Room.updateOne({roomId: roomId}, {$pull : {fileIds: filename}})
+                        room = await Room.findOne({roomId: roomId});
+                        if (room == null){
+                            return;
+                        }
+                        console.log('roomId : ', roomId, 'room : ', room);
+                        const kafkaMsg2 = {
+                            id: uuidv4(),
+                            roomId: roomId,
+                            clientSession: room.sessions,
+                            fileIds: room.fileIds,
+                        };
+                        const kafkaData2 = {topic: "UpdateFiles", messages: [{value: JSON.stringify(kafkaMsg2)}]};
+                        logger.debug(`  [1-201-00] Produce ChangeText ${JSON.stringify(kafkaMsg2)}`);
+                        producer.send(kafkaData2);
+                }
+
+            }
+        },
+    });
+}
+
 //start the Server
 gRPCServer.bindAsync("0.0.0.0:5000", grpc.ServerCredentials.createInsecure(), (error, port) => {
     logger.info(`[2] listening on port ${port}`);
     gRPCServer.start();
 });
+kafkaConsumerListener();
