@@ -118,24 +118,11 @@ gRPCServer.addService(StorageProto.StorageService.service, {
             const textId = GetFilesRequest.request.textId;
             logger.debug(`  [3-705-00] RPC_ID : ${id} | Get Redis Text : ${textId}`);
             const textValue = await redisClient.get(textId);
-            // .then(d => {
-            //     if (d){
-            //         logger.debug(`  [3-705-01] Get Text From Redis ${textId} : ${textValue}`);
-            //     } else {
-            //         logger.error(`  [3-705-51] Get Redis Error textId : ${textId}`);
-            //     }
-            // })
-
-            const fileNames = [];
-            logger.debug(`  [3-706-00] RPC_ID : ${id} | Get Redis ${GetFilesRequest.request.fileIds} : ${fileNames}`);
-            for (const fileId in GetFilesRequest.request.fileIds) {
-                fileNames.push(await redisClient.get(fileId));
-            }
 
             const GetFilesResponse = {
                 id: id,
                 textValue: textValue,
-                fileNames: fileNames,
+                fileNames: GetFilesRequest.request.fileIds,
             };
             logger.debug(`[3-105-21] gRPC Send GetFilesResponse : ${JSON.stringify(GetFilesResponse)}`);
             responseCallBack(null, GetFilesResponse);

@@ -9,7 +9,27 @@ const wsModule = require("ws");
 const {v4: uuidv4} = require("uuid");
 const grpc = require("@grpc/grpc-js");
 const protoLoader = require("@grpc/proto-loader");
+const cors = require("cors");
 const {Kafka, Partitioners, logLevel} = require("kafkajs");
+const multer = require("multer");
+const multerS3 = require("multer-s3");
+const aws = require("aws-sdk");
+aws.config.loadFromPath("./s3.json");
+
+const s3 = new aws.S3();
+const upload = multer(
+    {
+        storage: multerS3({
+            s3: s3,
+            bucket: "jcopy-storage",
+            key: function (req, file, cb) {
+                file.originalname = Buffer.from(file.originalname, "latin1").toString("utf8");
+                cb(null, req.query.room + "/" + file.originalname);
+            },
+        }),
+    },
+    "NONE"
+);
 
 let config = null;
 if (process.env.NODE_ENV == "develop") {
@@ -47,6 +67,7 @@ const consumer = kafka.consumer({groupId: config.kafka.groupid.gateway});
 const redisClient = createClient({url: `redis://${config.redis.host}:${config.redis.port}`, legacyMode: true});
 const Express = express();
 Express.use(express.static("./build"));
+Express.use(cors());
 
 (async () => {
     await producer.connect();
@@ -235,6 +256,68 @@ Express.post("/joinroom", (req, res) => {
     });
 });
 
+Express.put("/upload", (req, res) => {
+    const upload_single = upload.single("file");
+    if (parseInt(req.headers["content-length"]) < 10) {
+        res.send("용량 초과");
+    } else {
+        upload_single(req, res, (err) => {
+            if (err) {
+                console.log(err);
+            } else {
+                console.log(req.query);
+                const kafkaMsg = {
+                    id: uuidv4(),
+                    roomId: req.query.room,
+                    size: parseInt(req.headers["content-length"]),
+                    name: req.query.name,
+                };
+                const kafkaData = {topic: "UploadFile", messages: [{value: JSON.stringify(kafkaMsg)}]};
+                console.log(kafkaData);
+                producer.send(kafkaData).then((d) => {
+                    if (d) {
+                        logger.debug(`  [1-201-01] Produce ChangeText OK ${JSON.stringify(d)}`);
+                    } else {
+                        logger.debug(`  [1-201-51] Produce ChangeText error ${d}`);
+                    }
+                });
+                res.send("OK");
+            }
+        });
+    }
+});
+
+Express.delete("/file", (req, res) => {
+    const roomId = req.query.room;
+    const filename = req.query.name;
+    console.log(req.query);
+    const key = `${roomId}/${filename}`
+    console.log(key);
+    console.log('kafka1');
+    s3.deleteObject(
+        {
+            Bucket: "jcopy-storage", // 사용자 버켓 이름
+            Key: key,
+        },
+        (err, data) => {
+            if (err) {
+                console.log(err);
+            }
+            console.log("s3 deleteObject ", data);
+        }
+    );
+    console.log('kafka');
+    const kafkaMsg = {
+        id: uuidv4(),
+        roomId: roomId,
+        name: filename,
+    };
+    const kafkaData = {topic: "DeleteFile", messages: [{value: JSON.stringify(kafkaMsg)}]};
+    console.log(kafkaData);
+    producer.send(kafkaData);
+    res.send('OK')
+});
+
 const HTTPServer = Express.listen(3000);
 
 const WSServer = new wsModule.Server({
@@ -254,27 +337,37 @@ WSServer.on("connection", async (ws, request) => {
     ws.on("message", async (msg) => {
         logger.debug(`[1-602-00] WS [${ws.id}] Recv msg : ${msg}`);
         const wsMsg = JSON.parse(msg);
-        if (wsMsg.ping == "ping") {
-            ws.pong("pong");
-        } else {
-            if (wsMsg.roomId != ""){
+        switch (wsMsg.type) {
+            case "heartbeat":
+                /*
+                TODO:
+                heartbeat때 할 일
+                */
+                break;
+            case "text":
                 const kafkaMsg = {
                     id: uuidv4(),
                     roomId: wsMsg.roomId,
-                    textId: wsMsg.text.id,
-                    textValue: wsMsg.text.value,
+                    textId: wsMsg.textId,
+                    textValue: wsMsg.textValue,
                     clientSession: ws.id,
                 };
                 const kafkaData = {topic: "ChangeText", messages: [{value: JSON.stringify(kafkaMsg)}]};
                 logger.debug(`  [1-201-00] Produce ChangeText ${JSON.stringify(kafkaMsg)}`);
                 producer.send(kafkaData).then((d) => {
-                    if (d){
+                    if (d) {
                         logger.debug(`  [1-201-01] Produce ChangeText OK ${JSON.stringify(d)}`);
                     } else {
                         logger.debug(`  [1-201-51] Produce ChangeText error ${d}`);
                     }
                 });
-            }
+                break;
+            case "file":
+                /*
+                TODO:
+                file때 할 일
+                */
+                break;
         }
     });
 
@@ -285,7 +378,7 @@ WSServer.on("connection", async (ws, request) => {
 });
 
 async function kafkaConsumerListener() {
-    consumer.subscribe({topics: ["TextChanged"]}).then((d) => console.log("subscribe : ", d));
+    consumer.subscribe({topics: ["TextChanged", "UpdateFiles"]}).then((d) => console.log("subscribe : ", d));
 
     logger.info('[1-301-00] Kafka Subscribe Topics "TextChanged"');
     await consumer.run({
@@ -300,30 +393,65 @@ async function kafkaConsumerListener() {
             }
 
             if (msg != {}) {
-                if (topic == "TextChanged") {
-                    const GetJoinedSessionsRequest = {
-                        id: uuidv4(),
-                        roomId: msg.roomId,
-                        clientSession: msg.clientSession,
-                    };
-                    logger.debug(`  [1-106-00] gRPC Send GetJoinedSessionsRequest : ${JSON.stringify(GetJoinedSessionsRequest)}`);
-                    gRPCRoomServiceClient.GetJoinedSessions(GetJoinedSessionsRequest, (error, GetJoinedSessionsResponse) => {
-                        if (error) {
-                            logger.error(`  [1-106-51] gRPC GetJoinedSessions Error RPC_ID : ${GetJoinedSessionsRequest.id} | ${error}`);
-                        } else {
-                            logger.debug(`  [1-106-01] gRPC Recv GetJoinedSessionsResponse : ${JSON.stringify(GetJoinedSessionsResponse)}`);
-                            for (const sessionId of GetJoinedSessionsResponse.clientSessions) {
-                                if (msg.clientSession != sessionId) {
-                                    WSServer.clients.forEach(function each(client) {
-                                        if (client.readyState == wsModule.OPEN && client.id == sessionId) {
-                                            logger.debug(`    [1-603-00] WS [${client.id}] Send  msg : ${msg.textValue}`);
-                                            client.send(msg.textValue);
-                                        }
-                                    });
+                let GetJoinedSessionsRequest = {};
+                switch (topic) {
+                    case "TextChanged":
+                        GetJoinedSessionsRequest = {
+                            id: uuidv4(),
+                            roomId: msg.roomId,
+                            clientSession: msg.clientSession,
+                        };
+                        logger.debug(`  [1-106-00] gRPC Send GetJoinedSessionsRequest : ${JSON.stringify(GetJoinedSessionsRequest)}`);
+                        gRPCRoomServiceClient.GetJoinedSessions(GetJoinedSessionsRequest, (error, GetJoinedSessionsResponse) => {
+                            if (error) {
+                                logger.error(`  [1-106-51] gRPC GetJoinedSessions Error RPC_ID : ${GetJoinedSessionsRequest.id} | ${error}`);
+                            } else {
+                                logger.debug(`  [1-106-01] gRPC Recv GetJoinedSessionsResponse : ${JSON.stringify(GetJoinedSessionsResponse)}`);
+                                for (const sessionId of GetJoinedSessionsResponse.clientSessions) {
+                                    if (msg.clientSession != sessionId) {
+                                        WSServer.clients.forEach(function each(client) {
+                                            if (client.readyState == wsModule.OPEN && client.id == sessionId) {
+                                                logger.debug(`    [1-603-00] WS [${client.id}] Send  msg : ${msg.textValue}`);
+                                                const wsMsg = {
+                                                    type: "text",
+                                                    msg: msg.textValue,
+                                                };
+                                                client.send(JSON.stringify(wsMsg));
+                                            }
+                                        });
+                                    }
                                 }
                             }
-                        }
-                    });
+                        });
+                        break;
+                    case "UpdateFiles":
+                        GetJoinedSessionsRequest = {
+                            id: uuidv4(),
+                            roomId: msg.roomId,
+                            clientSession: msg.clientSession,
+                        };
+                        logger.debug(`  [1-106-00] gRPC Send GetJoinedSessionsRequest : ${JSON.stringify(GetJoinedSessionsRequest)}`);
+                        gRPCRoomServiceClient.GetJoinedSessions(GetJoinedSessionsRequest, (error, GetJoinedSessionsResponse) => {
+                            if (error) {
+                                logger.error(`  [1-106-51] gRPC GetJoinedSessions Error RPC_ID : ${GetJoinedSessionsRequest.id} | ${error}`);
+                            } else {
+                                logger.debug(`  [1-106-01] gRPC Recv GetJoinedSessionsResponse : ${JSON.stringify(GetJoinedSessionsResponse)}`);
+                                for (const sessionId of GetJoinedSessionsResponse.clientSessions) {
+                                    if (msg.clientSession != sessionId) {
+                                        WSServer.clients.forEach(function each(client) {
+                                            if (client.readyState == wsModule.OPEN && client.id == sessionId) {
+                                                const wsMsg = {
+                                                    type: "file",
+                                                    fileIds: msg.fileIds,
+                                                };
+                                                client.send(JSON.stringify(wsMsg));
+                                            }
+                                        });
+                                    }
+                                }
+                            }
+                        });
+                        break;
                 }
             }
         },
