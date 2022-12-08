@@ -4,6 +4,7 @@ import styled from "styled-components";
 import RoomComponent from "./Components/RoomComponent";
 import JoinRoom from "./Components/JoinRoom";
 import Home from "./Components/Home";
+import "./App.css"
 
 const Main = styled.div`
     display: flex;
@@ -20,7 +21,6 @@ function App() {
 
     return (
         <Main>
-            <a href="https://jcopy-storage.s3.ap-northeast-2.amazonaws.com/Unknown.png" download="sample.png">download!</a>
             <BrowserRouter>
                 <Routes>
                     <Route path="/home" element={<Home />} />

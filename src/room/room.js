@@ -193,6 +193,28 @@ gRPCServer.addService(RoomProto.RoomService.service, {
             responseCallBack(error, null);
         }
     },
+    GetLeftStorage: async(GetLeftStorageRequest, responseCallBack) => {
+        console.log(GetLeftStorageRequest.request);
+        const id = GetLeftStorageRequest.request.id;
+        const roomId = GetLeftStorageRequest.request.roomId;
+        const size = GetLeftStorageRequest.request.size;
+        try{
+            const room = await Room.findOne({roomId: roomId});
+            if (room){
+                const leftStorage = room.leftStorage;
+                const GetLeftStorageResponse = {
+                    id: id,
+                    roomId: roomId,
+                    leftStorage: leftStorage - size
+                }
+                responseCallBack(null, GetLeftStorageResponse);
+            }
+        } catch(error) {
+            console.log(error);
+            responseCallBack(error, null);
+        }
+    }
+
 });
 
 async function kafkaConsumerListener() {
