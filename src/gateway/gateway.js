@@ -274,33 +274,55 @@ Express.post("/joinroom", (req, res) => {
 
 Express.put("/upload", (req, res) => {
     const upload_single = upload.single("file");
-    if (parseInt(req.headers["content-length"]) < 10) {
-        res.send("용량 초과");
-    } else {
-        upload_single(req, res, (err) => {
-            if (err) {
-                console.log(err);
+    const GetLeftStorageRequest = {
+        id: uuidv4(),
+        roomId: req.query.room,
+        size: parseInt(req.headers["content-length"]),
+    };
+
+    gRPCRoomServiceClient.GetLeftStorage(GetLeftStorageRequest, (error, GetLeftStorageResponse) => {
+        if (error) {
+            console.log(error);
+        } else {
+            if (GetLeftStorageResponse.leftStorage < 0) {
+                const response = {
+                    error : 1,
+                    msg : "용량초과",
+                    file: req.query.name
+                }
+                res.send(JSON.stringify(response));
             } else {
-                console.log(req.query);
-                const kafkaMsg = {
-                    id: uuidv4(),
-                    roomId: req.query.room,
-                    size: parseInt(req.headers["content-length"]),
-                    name: req.query.name,
-                };
-                const kafkaData = {topic: "UploadFile", messages: [{value: JSON.stringify(kafkaMsg)}]};
-                console.log(kafkaData);
-                producer.send(kafkaData).then((d) => {
-                    if (d) {
-                        logger.debug(`  [1-201-01] Produce ChangeText OK ${JSON.stringify(d)}`);
+                upload_single(req, res, (err) => {
+                    if (err) {
+                        console.log(err);
                     } else {
-                        logger.debug(`  [1-201-51] Produce ChangeText error ${d}`);
+                        console.log(req.query);
+                        const kafkaMsg = {
+                            id: uuidv4(),
+                            roomId: req.query.room,
+                            size: parseInt(req.headers["content-length"]),
+                            name: req.query.name,
+                        };
+                        const kafkaData = {topic: "UploadFile", messages: [{value: JSON.stringify(kafkaMsg)}]};
+                        console.log(kafkaData);
+                        producer.send(kafkaData).then((d) => {
+                            if (d) {
+                                logger.debug(`  [1-201-01] Produce ChangeText OK ${JSON.stringify(d)}`);
+                            } else {
+                                logger.debug(`  [1-201-51] Produce ChangeText error ${d}`);
+                            }
+                        });
+                        const response = {
+                            error : 0,
+                            msg : "업로드 되었습니다.",
+                            file: req.query.name
+                        }
+                        res.send(JSON.stringify(response));
                     }
                 });
-                res.send("OK");
             }
-        });
-    }
+        }
+    });
 });
 
 Express.delete("/file", (req, res) => {

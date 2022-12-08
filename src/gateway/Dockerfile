@@ -12,6 +12,7 @@ COPY src/gateway/package.json /workspace/package.json
 COPY src/gateway/index.html /workspace/index.html
 COPY src/gateway/build /workspace/build
 COPY src/gateway/logger.js /workspace/logger.js
+COPY src/gateway/s3.json /workspace/s3.json
 
 WORKDIR /workspace
 
