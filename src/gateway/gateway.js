@@ -31,6 +31,26 @@ const upload = multer(
     "NONE"
 );
 
+// 버킷 비우는 스크립트
+// s3.listObjects(params, function (err, data) {
+//     if (err) throw err;
+//     console.log(data.Contents);
+//     for (const item of data.Contents) {
+//         s3.deleteObject(
+//             {
+//                 Bucket: "jcopy-storage", // 사용자 버켓 이름
+//                 Key: item.Key,
+//             },
+//             (err2, data2) => {
+//                 if (err2) {
+//                     throw err2;
+//                 }
+//                 console.log("s3 deleteObject ", data2);
+//             }
+//         );
+//     }
+// });
+
 let config = null;
 if (process.env.NODE_ENV == "develop") {
     const file = fs.readFileSync("../config.yaml", "utf8");
@@ -97,7 +117,7 @@ Express.use(
         resave: false,
         saveUninitialized: true,
         cookie: {
-            maxAge: 1000 * 60 * 60, // 10분
+            maxAge: 1000 * 60 * 60, // 60분
         },
     })
 );
@@ -124,10 +144,6 @@ Express.get("/joinroom", (req, res) => {
 
 Express.get("/room/*", (req, res) => {
     logger.info(`[1-404-00] ${req.method} ${req.originalUrl} ${req.socket.remoteAddress}  ${JSON.stringify(req.params)} | session-id : ${req.session.id}`);
-    /*
-    방 있나 없나 확인해서 리턴해주는 로직 추가해야함.
-    */
-
     res.sendFile("/index.html", {root: "."});
 });
 
@@ -291,9 +307,9 @@ Express.delete("/file", (req, res) => {
     const roomId = req.query.room;
     const filename = req.query.name;
     console.log(req.query);
-    const key = `${roomId}/${filename}`
+    const key = `${roomId}/${filename}`;
     console.log(key);
-    console.log('kafka1');
+    console.log("kafka1");
     s3.deleteObject(
         {
             Bucket: "jcopy-storage", // 사용자 버켓 이름
@@ -306,7 +322,7 @@ Express.delete("/file", (req, res) => {
             console.log("s3 deleteObject ", data);
         }
     );
-    console.log('kafka');
+    console.log("kafka");
     const kafkaMsg = {
         id: uuidv4(),
         roomId: roomId,
@@ -315,7 +331,7 @@ Express.delete("/file", (req, res) => {
     const kafkaData = {topic: "DeleteFile", messages: [{value: JSON.stringify(kafkaMsg)}]};
     console.log(kafkaData);
     producer.send(kafkaData);
-    res.send('OK')
+    res.send("OK");
 });
 
 const HTTPServer = Express.listen(3000);
