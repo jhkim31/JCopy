@@ -47,6 +47,7 @@ function RoomComponent(props: {ws: WebSocket}) {
     const [session, setSession] = useState<string>("");
     const [files, setFiles] = useState<string[]>([]);
     const [uploadFiles, setUploadFiles] = useState<string[]>([]);
+    const [uploadProgress, setUploadProgress] = useState<{[file: string] : number}> ({});
 
     useEffect(() => {
         const pathRoomId = window.location.pathname.replace("/room/", "");
@@ -100,9 +101,9 @@ function RoomComponent(props: {ws: WebSocket}) {
                     break;
                 case "file":
                     setFiles(msg.fileIds);
-                    setUploadFiles(oldArr => {
+                    setUploadFiles((oldArr) => {
                         const tmp = new Set(oldArr);
-                        for(const file of msg.fileIds){
+                        for (const file of msg.fileIds) {
                             tmp.delete(file);
                         }
                         const newArr = Array.from(tmp);
@@ -121,39 +122,74 @@ function RoomComponent(props: {ws: WebSocket}) {
     }
 
     const handleChange = (file: File) => {
+        var xhr = new XMLHttpRequest();
         const form = new FormData();
         form.append("file", file);
-        const url = `http://${window.location.host}/upload?room=${roomId}&name=${file.name}`
+        const url = `http://${window.location.host}/upload?room=${roomId}&name=${file.name}`;
+
         setUploadFiles((oldArr) => {
             const newArr = [...oldArr];
             newArr.push(file.name);
             return newArr;
         });
 
-        fetch(url, {
-            method: "PUT",
-            body: form,
-        })
-        .then(d => d.json())
-        .then(d => {
-            if (d.error != 0){
+        xhr.onload = (e) => {
+            const d = JSON.parse(xhr.response);
+            if (d.error != 0) {
                 alert(`${d.file} : ${d.msg}`);
             }
-            setUploadFiles(oldArr => {
+            setUploadFiles((oldArr) => {
                 const tmp = new Set(oldArr);
                 tmp.delete(d.file);
                 const newArr = Array.from(tmp);
                 return newArr;
             });
+        };
+
+        xhr.upload.onprogress = (e) => {
+            if (e.lengthComputable) {
+                var percentComplete = Math.floor((e.loaded / e.total) * 100);
+                console.log(percentComplete);
+                setUploadProgress(prev => {
+                    const newJson = {...prev};
+                    newJson[file.name] = percentComplete
+                    return newJson
+                })
+            }
+        };
+
+        xhr.open("PUT", url);
+
+        xhr.send(form);
+        setUploadProgress(prev => {
+            const newJson = {...prev};
+            newJson[file.name] = 0
+            return newJson
         })
+
+        // fetch(url, {
+        //     method: "PUT",
+        //     body: form,
+        // })
+        // .then(d => d.json())
+        // .then(d => {
+        //     if (d.error != 0){
+        //         alert(`${d.file} : ${d.msg}`);
+        //     }
+        //     setUploadFiles(oldArr => {
+        //         const tmp = new Set(oldArr);
+        //         tmp.delete(d.file);
+        //         const newArr = Array.from(tmp);
+        //         return newArr;
+        //     });
+        // })
     };
 
-    function deleteFile (filename:String){
+    function deleteFile(filename: String) {
         const url = `http://${window.location.host}/file?room=${roomId}&name=${filename}`;
         fetch(url, {
-            method: "DELETE"
-        })
-        .then(d => console.log(d));
+            method: "DELETE",
+        }).then((d) => console.log(d));
     }
     return (
         <Room>
@@ -167,11 +203,11 @@ function RoomComponent(props: {ws: WebSocket}) {
                 {uploadFiles.map((item) => {
                     return (
                         <div>
-                            <a>{item}</a>
+                            <a>{item} {uploadProgress[item]} %</a>
                         </div>
                     );
                 })}
-                <hr/>
+                <hr />
                 <div>공유됨</div>
                 {files.map((item) => {
                     const url = `https://jcopy-storage.s3.ap-northeast-2.amazonaws.com/${roomId}/${item}`;
@@ -184,7 +220,7 @@ function RoomComponent(props: {ws: WebSocket}) {
                         </div>
                     );
                 })}
-                <hr/>
+                <hr />
             </div>
             <FileUploader handleChange={handleChange} name="file" />
         </Room>
