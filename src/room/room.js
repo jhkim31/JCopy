@@ -154,6 +154,8 @@ gRPCServer.addService(RoomProto.RoomService.service, {
                     roomId: roomId,
                     textId: room.textId,
                     fileIds: room.fileIds,
+                    leftStorage: room.leftStorage,
+                    expireTime: room.expireTime
                 };
             } else {
                 JoinRoomResponse = {
@@ -183,8 +185,8 @@ gRPCServer.addService(RoomProto.RoomService.service, {
             const GetJoinedSessionsResponse = {
                 id: id,
                 roomId: room.roomId,
-
                 clientSessions: room.sessions,
+                leftStorage: room.leftStorage
             };
             logger.debug(`[2-106-21] gRPC Send GetJoinedSessionsResponse : ${JSON.stringify(GetJoinedSessionsResponse)}`);
             responseCallBack(null, GetJoinedSessionsResponse);
