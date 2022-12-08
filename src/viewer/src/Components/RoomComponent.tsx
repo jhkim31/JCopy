@@ -46,6 +46,7 @@ function RoomComponent(props: {ws: WebSocket}) {
     const [roomId, setRoomId] = useState<string>("");
     const [session, setSession] = useState<string>("");
     const [files, setFiles] = useState<string[]>([]);
+    const [uploadFiles, setUploadFiles] = useState<string[]>([]);
 
     useEffect(() => {
         const pathRoomId = window.location.pathname.replace("/room/", "");
@@ -56,9 +57,12 @@ function RoomComponent(props: {ws: WebSocket}) {
                     setTextValue(d.text.value);
                     setRoomId(d.roomId);
                     setSession(d.session);
+                    setFiles(d.files);
+
                     roomInfo.current.text = d.text;
                     roomInfo.current.session = d.session;
                     roomInfo.current.roomId = d.roomId;
+                    roomInfo.current.files = d.files;
                 } else {
                     alert("해당 방이 없습니다!");
                     return navigate("/home");
@@ -96,6 +100,15 @@ function RoomComponent(props: {ws: WebSocket}) {
                     break;
                 case "file":
                     setFiles(msg.fileIds);
+                    setUploadFiles(oldArr => {
+                        const tmp = new Set(oldArr);
+                        for(const file of msg.fileIds){
+                            tmp.delete(file);
+                        }
+                        const newArr = Array.from(tmp);
+                        return newArr;
+                    });
+                    roomInfo.current.files = msg.fileIds;
                     break;
             }
         };
@@ -111,7 +124,7 @@ function RoomComponent(props: {ws: WebSocket}) {
         const form = new FormData();
         form.append("file", file);
         const url = `http://${window.location.host}/upload?room=${roomId}&name=${file.name}`
-        setFiles((oldArr) => {
+        setUploadFiles((oldArr) => {
             const newArr = [...oldArr];
             newArr.push(file.name);
             return newArr;
@@ -138,6 +151,16 @@ function RoomComponent(props: {ws: WebSocket}) {
             </RoomID>
             <TextField onChange={textHandler} value={textValue} />
             <div id="fileList">
+                <div>업로드중 ...</div>
+                {uploadFiles.map((item) => {
+                    return (
+                        <div>
+                            <a>{item}</a>
+                        </div>
+                    );
+                })}
+                <hr/>
+                <div>공유됨</div>
                 {files.map((item) => {
                     const url = `https://jcopy-storage.s3.ap-northeast-2.amazonaws.com/${roomId}/${item}`;
                     return (
@@ -149,6 +172,7 @@ function RoomComponent(props: {ws: WebSocket}) {
                         </div>
                     );
                 })}
+                <hr/>
             </div>
             <FileUploader handleChange={handleChange} name="file" />
         </Room>

@@ -22,9 +22,26 @@ function JoinRoom() {
 
             });
     }
+
+    async function enterPress(e: React.KeyboardEvent){
+        if (e.key == 'Enter'){
+            fetch(`/joinroom?roomId=${roomId}`, {method: "POST"})
+            .then((d) => d.json())
+            .then((d) => {
+                if (d.error == 0){
+                    const state = d;
+                    return navigate(`/room/${d.roomId}`);
+                } else {
+                    alert('해당 방이 없습니다!');
+                    return navigate('/home');
+                }
+
+            });
+        }
+    }
     return (
         <div>
-            <input type="text" value={roomId} onChange={inputHandler}></input>
+            <input type="text" value={roomId} onChange={inputHandler} onKeyDown={enterPress} autoFocus></input>
             <button onClick={joinRoom}>join!</button>
         </div>
     );
