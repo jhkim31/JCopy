@@ -32,6 +32,14 @@ const upload = multer(
 );
 
 // 버킷 비우는 스크립트
+
+// const aws = require("aws-sdk");
+// aws.config.loadFromPath("./s3.json");
+
+// const s3 = new aws.S3();
+// params = {
+//     Bucket: "jcopy-storage"
+// }
 // s3.listObjects(params, function (err, data) {
 //     if (err) throw err;
 //     console.log(data.Contents);
@@ -169,10 +177,39 @@ Express.get("/text", (req, res) => {
     });
 });
 
+Express.get('/uploadable', (req, res) => {
+    const roomId = req.query.roomId;
+    const size = req.query.size;
+    const GetLeftStorageRequest = {
+        id: uuidv4(),
+        roomId: roomId,
+        size: size
+    };
+
+    gRPCRoomServiceClient.GetLeftStorage(GetLeftStorageRequest, (error, GetLeftStorageResponse) => {
+        if (error) {
+        } else {
+            if (GetLeftStorageResponse.leftStorage < 0){
+                res.send({
+                    res: 0,
+                    msg : "용량 없음"
+                })
+            } else {
+                res.send({
+                    res : 1,
+                    msg: "용량 있음"
+                })
+            }
+        }
+    });
+})
+
 Express.get("*", function (req, res) {
     logger.info(`[1-499-00] ${req.method} ${req.originalUrl} ${req.socket.remoteAddress}  ${JSON.stringify(req.params)} | session-id : ${req.session.id}`);
     res.status(404).redirect("/home");
 });
+
+
 
 Express.post("/room", (req, res) => {
     logger.info(`[1-501-00] ${req.method} ${req.originalUrl} ${req.socket.remoteAddress}  ${JSON.stringify(req.params)} | session-id : ${req.session.id}`);
@@ -253,6 +290,8 @@ Express.post("/joinroom", (req, res) => {
                             files: GetFilesResponse.fileNames,
                             error: 0,
                             session: req.session.id,
+                            leftStorage: JoinRoomResponse.leftStorage,
+                            expireTime: JoinRoomResponse.expireTime
                         };
                         logger.info(`[1-502-21] POST /joinroom [${req.socket.remoteAddress}] Response : ${JSON.stringify(wsRes)}`);
                         res.send(wsRes);
@@ -481,6 +520,7 @@ async function kafkaConsumerListener() {
                                                 const wsMsg = {
                                                     type: "file",
                                                     fileIds: msg.fileIds,
+                                                    leftStorage : GetJoinedSessionsResponse.leftStorage
                                                 };
                                                 client.send(JSON.stringify(wsMsg));
                                             }
