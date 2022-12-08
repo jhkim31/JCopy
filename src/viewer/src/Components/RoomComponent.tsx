@@ -133,7 +133,19 @@ function RoomComponent(props: {ws: WebSocket}) {
         fetch(url, {
             method: "PUT",
             body: form,
-        });
+        })
+        .then(d => d.json())
+        .then(d => {
+            if (d.error != 0){
+                alert(`${d.file} : ${d.msg}`);
+            }
+            setUploadFiles(oldArr => {
+                const tmp = new Set(oldArr);
+                tmp.delete(d.file);
+                const newArr = Array.from(tmp);
+                return newArr;
+            });
+        })
     };
 
     function deleteFile (filename:String){

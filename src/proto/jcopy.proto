@@ -74,10 +74,24 @@ message GetFilesResponse {
     repeated string fileNames = 3;
 }
 
+message GetLeftStorageRequest {
+    string id = 1;
+    string roomId = 2;
+    int64 size = 3;
+}
+
+message GetLeftStorageResponse {
+    string id = 1;
+    string roomId = 2;
+    int64 leftStorage = 3;
+}
+
+
 service RoomService {
     rpc CreateRoom (CreateRoomRequest) returns (CreateRoomResponse){};
     rpc JoinRoom (JoinRoomRequest) returns (JoinRoomResponse){};
     rpc GetJoinedSessions (GetJoinedSessionsRequest) returns (GetJoinedSessionsResponse){};
+    rpc GetLeftStorage(GetLeftStorageRequest) returns (GetLeftStorageResponse){};
 }
 
 service StorageService {

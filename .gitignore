@@ -6,6 +6,7 @@
 **/error_logs/
 **/package-lock.json
 **/s3.json
+.vscode
 
 
 ### macOS ###
