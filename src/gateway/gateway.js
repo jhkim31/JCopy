@@ -31,6 +31,26 @@ const upload = multer(
     "NONE"
 );
 
+// 버킷 비우는 스크립트
+// s3.listObjects(params, function (err, data) {
+//     if (err) throw err;
+//     console.log(data.Contents);
+//     for (const item of data.Contents) {
+//         s3.deleteObject(
+//             {
+//                 Bucket: "jcopy-storage", // 사용자 버켓 이름
+//                 Key: item.Key,
+//             },
+//             (err2, data2) => {
+//                 if (err2) {
+//                     throw err2;
+//                 }
+//                 console.log("s3 deleteObject ", data2);
+//             }
+//         );
+//     }
+// });
+
 let config = null;
 if (process.env.NODE_ENV == "develop") {
     const file = fs.readFileSync("../config.yaml", "utf8");
@@ -97,7 +117,7 @@ Express.use(
         resave: false,
         saveUninitialized: true,
         cookie: {
-            maxAge: 1000 * 60 * 60, // 10분
+            maxAge: 1000 * 60 * 60, // 60분
         },
     })
 );
@@ -124,10 +144,6 @@ Express.get("/joinroom", (req, res) => {
 
 Express.get("/room/*", (req, res) => {
     logger.info(`[1-404-00] ${req.method} ${req.originalUrl} ${req.socket.remoteAddress}  ${JSON.stringify(req.params)} | session-id : ${req.session.id}`);
-    /*
-    방 있나 없나 확인해서 리턴해주는 로직 추가해야함.
-    */
-
     res.sendFile("/index.html", {root: "."});
 });
 
@@ -258,42 +274,64 @@ Express.post("/joinroom", (req, res) => {
 
 Express.put("/upload", (req, res) => {
     const upload_single = upload.single("file");
-    if (parseInt(req.headers["content-length"]) < 10) {
-        res.send("용량 초과");
-    } else {
-        upload_single(req, res, (err) => {
-            if (err) {
-                console.log(err);
+    const GetLeftStorageRequest = {
+        id: uuidv4(),
+        roomId: req.query.room,
+        size: parseInt(req.headers["content-length"]),
+    };
+
+    gRPCRoomServiceClient.GetLeftStorage(GetLeftStorageRequest, (error, GetLeftStorageResponse) => {
+        if (error) {
+            console.log(error);
+        } else {
+            if (GetLeftStorageResponse.leftStorage < 0) {
+                const response = {
+                    error : 1,
+                    msg : "용량초과",
+                    file: req.query.name
+                }
+                res.send(JSON.stringify(response));
             } else {
-                console.log(req.query);
-                const kafkaMsg = {
-                    id: uuidv4(),
-                    roomId: req.query.room,
-                    size: parseInt(req.headers["content-length"]),
-                    name: req.query.name,
-                };
-                const kafkaData = {topic: "UploadFile", messages: [{value: JSON.stringify(kafkaMsg)}]};
-                console.log(kafkaData);
-                producer.send(kafkaData).then((d) => {
-                    if (d) {
-                        logger.debug(`  [1-201-01] Produce ChangeText OK ${JSON.stringify(d)}`);
+                upload_single(req, res, (err) => {
+                    if (err) {
+                        console.log(err);
                     } else {
-                        logger.debug(`  [1-201-51] Produce ChangeText error ${d}`);
+                        console.log(req.query);
+                        const kafkaMsg = {
+                            id: uuidv4(),
+                            roomId: req.query.room,
+                            size: parseInt(req.headers["content-length"]),
+                            name: req.query.name,
+                        };
+                        const kafkaData = {topic: "UploadFile", messages: [{value: JSON.stringify(kafkaMsg)}]};
+                        console.log(kafkaData);
+                        producer.send(kafkaData).then((d) => {
+                            if (d) {
+                                logger.debug(`  [1-201-01] Produce ChangeText OK ${JSON.stringify(d)}`);
+                            } else {
+                                logger.debug(`  [1-201-51] Produce ChangeText error ${d}`);
+                            }
+                        });
+                        const response = {
+                            error : 0,
+                            msg : "업로드 되었습니다.",
+                            file: req.query.name
+                        }
+                        res.send(JSON.stringify(response));
                     }
                 });
-                res.send("OK");
             }
-        });
-    }
+        }
+    });
 });
 
 Express.delete("/file", (req, res) => {
     const roomId = req.query.room;
     const filename = req.query.name;
     console.log(req.query);
-    const key = `${roomId}/${filename}`
+    const key = `${roomId}/${filename}`;
     console.log(key);
-    console.log('kafka1');
+    console.log("kafka1");
     s3.deleteObject(
         {
             Bucket: "jcopy-storage", // 사용자 버켓 이름
@@ -306,7 +344,7 @@ Express.delete("/file", (req, res) => {
             console.log("s3 deleteObject ", data);
         }
     );
-    console.log('kafka');
+    console.log("kafka");
     const kafkaMsg = {
         id: uuidv4(),
         roomId: roomId,
@@ -315,7 +353,7 @@ Express.delete("/file", (req, res) => {
     const kafkaData = {topic: "DeleteFile", messages: [{value: JSON.stringify(kafkaMsg)}]};
     console.log(kafkaData);
     producer.send(kafkaData);
-    res.send('OK')
+    res.send("OK");
 });
 
 const HTTPServer = Express.listen(3000);
