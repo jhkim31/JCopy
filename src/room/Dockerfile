@@ -15,4 +15,4 @@ WORKDIR /workspace
 RUN npm install
 ENV NODE_ENV=production
 
-ENTRYPOINT node room.js && tail -f /dev/null
+ENTRYPOINT tail -f /dev/null

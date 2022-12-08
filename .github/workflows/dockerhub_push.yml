@@ -14,7 +14,7 @@ jobs:
 
       - name: config file create
         run : |
-          echo "{\"accessKeyId\":${{secrets.AWS_S3_ACCESS_KEY}},\"secretAccessKey\":${{secrets.AWS_S3_SECRET_ACCESS_KEY}},\"region\":\"ap-northeast-2\"}" >> ./src/gateway/s3.json
+          echo "{\"accessKeyId\":\"${{secrets.AWS_S3_ACCESS_KEY}}\",\"secretAccessKey\":\"${{secrets.AWS_S3_SECRET_ACCESS_KEY}}\",\"region\":\"ap-northeast-2\"}" >> ./src/gateway/s3.json
 
       - name: Login to Dockerhub
         uses: docker/login-action@v1
@@ -27,7 +27,7 @@ jobs:
         with:
           context: .
           file: ./src/gateway/Dockerfile
-          tags: jhkimdocker/jcopy-gateway:v0.1.2
+          tags: jhkimdocker/jcopy-gateway:v0.1.3
           push: true
 
       - name: room test
@@ -35,7 +35,7 @@ jobs:
         with:
           context: .
           file: ./src/room/Dockerfile
-          tags: jhkimdocker/jcopy-room:v0.1.2
+          tags: jhkimdocker/jcopy-room:v0.1.3
           push: true
 
       - name: storage Test
@@ -43,5 +43,5 @@ jobs:
         with:
           context: .
           file: ./src/storage/Dockerfile
-          tags: jhkimdocker/jcopy-storage:v0.1.2
+          tags: jhkimdocker/jcopy-storage:v0.1.3
           push: true
