@@ -27,7 +27,7 @@ jobs:
         with:
           context: .
           file: ./src/gateway/Dockerfile
-          tags: jhkimdocker/jcopy-gateway:v0.1.4
+          tags: jhkimdocker/jcopy-gateway:v0.1.5
           push: true
 
       - name: room test
@@ -36,7 +36,7 @@ jobs:
           context: .
           file: ./src/room/Dockerfile
           tags: jhkimdocker/jcopy-room:v0.1.4
-          push: true
+          push: false
 
       - name: storage Test
         uses: docker/build-push-action@v2
@@ -44,4 +44,4 @@ jobs:
           context: .
           file: ./src/storage/Dockerfile
           tags: jhkimdocker/jcopy-storage:v0.1.4
-          push: true
+          push: false
