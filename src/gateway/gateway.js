@@ -177,39 +177,37 @@ Express.get("/text", (req, res) => {
     });
 });
 
-Express.get('/uploadable', (req, res) => {
+Express.get("/uploadable", (req, res) => {
     const roomId = req.query.roomId;
     const size = req.query.size;
     const GetLeftStorageRequest = {
         id: uuidv4(),
         roomId: roomId,
-        size: size
+        size: size,
     };
 
     gRPCRoomServiceClient.GetLeftStorage(GetLeftStorageRequest, (error, GetLeftStorageResponse) => {
         if (error) {
         } else {
-            if (GetLeftStorageResponse.leftStorage < 0){
+            if (GetLeftStorageResponse.leftStorage < 0) {
                 res.send({
                     res: 0,
-                    msg : "용량 없음"
-                })
+                    msg: "용량 없음",
+                });
             } else {
                 res.send({
-                    res : 1,
-                    msg: "용량 있음"
-                })
+                    res: 1,
+                    msg: "용량 있음",
+                });
             }
         }
     });
-})
+});
 
 Express.get("*", function (req, res) {
     logger.info(`[1-499-00] ${req.method} ${req.originalUrl} ${req.socket.remoteAddress}  ${JSON.stringify(req.params)} | session-id : ${req.session.id}`);
     res.status(404).redirect("/home");
 });
-
-
 
 Express.post("/room", (req, res) => {
     logger.info(`[1-501-00] ${req.method} ${req.originalUrl} ${req.socket.remoteAddress}  ${JSON.stringify(req.params)} | session-id : ${req.session.id}`);
@@ -291,7 +289,7 @@ Express.post("/joinroom", (req, res) => {
                             error: 0,
                             session: req.session.id,
                             leftStorage: JoinRoomResponse.leftStorage,
-                            expireTime: JoinRoomResponse.expireTime
+                            expireTime: JoinRoomResponse.expireTime,
                         };
                         logger.info(`[1-502-21] POST /joinroom [${req.socket.remoteAddress}] Response : ${JSON.stringify(wsRes)}`);
                         res.send(wsRes);
@@ -325,10 +323,10 @@ Express.put("/upload", (req, res) => {
         } else {
             if (GetLeftStorageResponse.leftStorage < 0) {
                 const response = {
-                    error : 1,
-                    msg : "용량초과",
-                    file: req.query.name
-                }
+                    error: 1,
+                    msg: "용량초과",
+                    file: req.query.name,
+                };
                 res.send(JSON.stringify(response));
             } else {
                 upload_single(req, res, (err) => {
@@ -352,10 +350,10 @@ Express.put("/upload", (req, res) => {
                             }
                         });
                         const response = {
-                            error : 0,
-                            msg : "업로드 되었습니다.",
-                            file: req.query.name
-                        }
+                            error: 0,
+                            msg: "업로드 되었습니다.",
+                            file: req.query.name,
+                        };
                         res.send(JSON.stringify(response));
                     }
                 });
@@ -507,25 +505,26 @@ async function kafkaConsumerListener() {
                             roomId: msg.roomId,
                             clientSession: msg.clientSession,
                         };
-                        logger.debug(`  [1-106-00] gRPC Send GetJoinedSessionsRequest : ${JSON.stringify(GetJoinedSessionsRequest)}`);
+                        logger.debug(`UpdateFiles  [1-106-00] gRPC Send GetJoinedSessionsRequest : ${JSON.stringify(GetJoinedSessionsRequest)}`);
                         gRPCRoomServiceClient.GetJoinedSessions(GetJoinedSessionsRequest, (error, GetJoinedSessionsResponse) => {
                             if (error) {
-                                logger.error(`  [1-106-51] gRPC GetJoinedSessions Error RPC_ID : ${GetJoinedSessionsRequest.id} | ${error}`);
+                                logger.error(`UpdateFiles  [1-106-51] gRPC GetJoinedSessions Error RPC_ID : ${GetJoinedSessionsRequest.id} | ${error}`);
                             } else {
-                                logger.debug(`  [1-106-01] gRPC Recv GetJoinedSessionsResponse : ${JSON.stringify(GetJoinedSessionsResponse)}`);
+                                logger.debug(`UpdateFiles  [1-106-01] gRPC Recv GetJoinedSessionsResponse : ${JSON.stringify(GetJoinedSessionsResponse)}`);
                                 for (const sessionId of GetJoinedSessionsResponse.clientSessions) {
-                                    if (msg.clientSession != sessionId) {
-                                        WSServer.clients.forEach(function each(client) {
-                                            if (client.readyState == wsModule.OPEN && client.id == sessionId) {
-                                                const wsMsg = {
-                                                    type: "file",
-                                                    fileIds: msg.fileIds,
-                                                    leftStorage : GetJoinedSessionsResponse.leftStorage
-                                                };
-                                                client.send(JSON.stringify(wsMsg));
-                                            }
-                                        });
-                                    }
+                                    logger.debug(`UpdateFiles ${sessionId}`);
+
+                                    WSServer.clients.forEach(function each(client) {
+                                        if (client.readyState == wsModule.OPEN && client.id == sessionId) {
+                                            const wsMsg = {
+                                                type: "file",
+                                                fileIds: msg.fileIds,
+                                                leftStorage: GetJoinedSessionsResponse.leftStorage,
+                                            };
+                                            logger.debug(`UpdateFiles send : ${sessionId}`);
+                                            client.send(JSON.stringify(wsMsg));
+                                        }
+                                    });
                                 }
                             }
                         });
