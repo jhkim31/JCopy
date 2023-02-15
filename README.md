@@ -1,5 +1,4 @@
 # JCopy
-
 # 1. 개요
 파일 전송을 위한 웹 어플리케이션
 
@@ -52,6 +51,7 @@
 <a href="https://redis.io">
  <img src="https://img.shields.io/badge/Redis-DC382D?style=flat&logo=Redis&logoColor=white">
 </a>
+
 
 ## DevOps
 <a href="https://docs.github.com/ko/actions">
