@@ -1,7 +1,7 @@
 develop:
   kafka:
     brokers:
-      - 13.125.246.240:9092
+      - 3.37.37.161:9092
     groupid:
       gateway: jcopy-gateway-dev
       room: jcopy-room-dev
@@ -27,7 +27,7 @@ develop:
 deploy:
   kafka:
     brokers:
-      - 172.31.36.85:9092
+      - 172.31.41.194:9092
     groupid:
       gateway: jcopy-gateway
       room: 'jcopy-room'

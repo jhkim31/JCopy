@@ -17,18 +17,16 @@ const aws = require("aws-sdk");
 aws.config.loadFromPath("./s3.json");
 
 const s3 = new aws.S3();
-const upload = multer(
-    {
-        storage: multerS3({
-            s3: s3,
-            bucket: "jcopy-storage",
-            key: function (req, file, cb) {
-                file.originalname = Buffer.from(file.originalname, "latin1").toString("utf8");
-                cb(null, req.query.room + "/" + file.originalname);
-            },
-        }),
-    }
-);
+const upload = multer({
+    storage: multerS3({
+        s3: s3,
+        bucket: "jcopy-storage",
+        key: function (req, file, cb) {
+            file.originalname = Buffer.from(file.originalname, "latin1").toString("utf8");
+            cb(null, req.query.room + "/" + file.originalname);
+        },
+    }),
+});
 
 // 버킷 비우는 스크립트
 
@@ -70,10 +68,10 @@ if (process.env.NODE_ENV == "production") {
 
 logger.info(`[1-001-01] config\n${YAML.stringify(config)}`);
 
-// const kafka = new Kafka({
-//     brokers: config.kafka.brokers,
-//     logLevel: logLevel.ERROR,
-// });
+const kafka = new Kafka({
+    brokers: config.kafka.brokers,
+    logLevel: logLevel.ERROR,
+});
 const PROTO_FILE = config.grpc.proto.path;
 
 const options = {
@@ -89,19 +87,20 @@ const StorageService = grpc.loadPackageDefinition(pkgDefs).StorageService;
 let gRPCRoomServiceClient = null;
 let gRPCStorageServiceClient = null;
 
-// const producer = kafka.producer({createPartitioner: Partitioners.LegacyPartitioner});
-// const consumer = kafka.consumer({groupId: config.kafka.groupid.gateway});
+const producer = kafka.producer({createPartitioner: Partitioners.LegacyPartitioner});
+const consumer = kafka.consumer({groupId: config.kafka.groupid.gateway});
 const redisClient = createClient({url: `redis://${config.redis.host}:${config.redis.port}`, legacyMode: true});
 const Express = express();
+
 Express.use(express.static("./build"));
 
-Express.use(cors());
+// Express.use(cors());
 
-// (async () => {
-//     await producer.connect();
-//     await consumer.connect();
-//     logger.info("[1-002-01] kafka connected");
-// })();
+(async () => {
+    await producer.connect();
+    await consumer.connect();
+    logger.info("[1-002-01] kafka connected");
+})();
 
 try {
     redisClient.connect();
@@ -131,28 +130,31 @@ Express.use(
 );
 
 Express.get("/", (req, res) => {
+    console.log("get /");
     if (req.headers["user-agent"].includes("ELB-HealthChecker")) {
         res.send("health check");
         req.session.destroy();
     } else {
+        console.log("redirect");
         logger.info(`[1-401-00] ${req.method} ${req.originalUrl} ${req.socket.remoteAddress}  ${JSON.stringify(req.params)} | session-id : ${req.session.id}`);
         res.redirect("/home");
     }
 });
 
 Express.get("/home", (req, res) => {
+	console.log("/home");
     logger.info(`[1-402-00] ${req.method} ${req.originalUrl} ${req.socket.remoteAddress}  ${JSON.stringify(req.params)} | session-id : ${req.session.id}`);
-    res.sendFile("build/index.html", {root: "."});
+    res.sendFile("build/index2.html", {root: "."});
 });
 
 Express.get("/joinroom", (req, res) => {
     logger.info(`[1-403-00] ${req.method} ${req.originalUrl} ${req.socket.remoteAddress}  ${JSON.stringify(req.params)} | session-id : ${req.session.id}`);
-    res.sendFile("build/index.html", {root: "."});
+    res.sendFile("build/index2.html", {root: "."});
 });
 
 Express.get("/room/*", (req, res) => {
     logger.info(`[1-404-00] ${req.method} ${req.originalUrl} ${req.socket.remoteAddress}  ${JSON.stringify(req.params)} | session-id : ${req.session.id}`);
-    res.sendFile("build/index.html", {root: "."});
+    res.sendFile("build/index2.html", {root: "."});
 });
 
 Express.get("/text", (req, res) => {
@@ -452,87 +454,87 @@ WSServer.on("connection", async (ws, request) => {
     });
 });
 
-// async function kafkaConsumerListener() {
-//     consumer.subscribe({topics: ["TextChanged", "UpdateFiles"]}).then((d) => console.log("subscribe : ", d));
+async function kafkaConsumerListener() {
+    consumer.subscribe({topics: ["TextChanged", "UpdateFiles"]}).then((d) => console.log("subscribe : ", d));
 
-//     logger.info('[1-301-00] Kafka Subscribe Topics "TextChanged"');
-//     await consumer.run({
-//         eachMessage: async ({topic, partition, message, heartbeat, pause}) => {
-//             logger.debug(`[1-302-00] Consume ${topic} ${message.value}`);
-//             let msg = {};
-//             try {
-//                 msg = JSON.parse(message.value.toString());
-//                 logger.debug(`[1-302-01] Parse msg ${msg}`);
-//             } catch (e) {
-//                 logger.error(`[1-302-51] Error Parsing Kafka Message ... ${e} | msg : ${message.value.toString()}`);
-//             }
+    logger.info('[1-301-00] Kafka Subscribe Topics "TextChanged"');
+    await consumer.run({
+        eachMessage: async ({topic, partition, message, heartbeat, pause}) => {
+            logger.debug(`[1-302-00] Consume ${topic} ${message.value}`);
+            let msg = {};
+            try {
+                msg = JSON.parse(message.value.toString());
+                logger.debug(`[1-302-01] Parse msg ${msg}`);
+            } catch (e) {
+                logger.error(`[1-302-51] Error Parsing Kafka Message ... ${e} | msg : ${message.value.toString()}`);
+            }
 
-//             if (msg != {}) {
-//                 let GetJoinedSessionsRequest = {};
-//                 switch (topic) {
-//                     case "TextChanged":
-//                         GetJoinedSessionsRequest = {
-//                             id: uuidv4(),
-//                             roomId: msg.roomId,
-//                             clientSession: msg.clientSession,
-//                         };
-//                         logger.debug(`  [1-106-00] gRPC Send GetJoinedSessionsRequest : ${JSON.stringify(GetJoinedSessionsRequest)}`);
-//                         gRPCRoomServiceClient.GetJoinedSessions(GetJoinedSessionsRequest, (error, GetJoinedSessionsResponse) => {
-//                             if (error) {
-//                                 logger.error(`  [1-106-51] gRPC GetJoinedSessions Error RPC_ID : ${GetJoinedSessionsRequest.id} | ${error}`);
-//                             } else {
-//                                 logger.debug(`  [1-106-01] gRPC Recv GetJoinedSessionsResponse : ${JSON.stringify(GetJoinedSessionsResponse)}`);
-//                                 for (const sessionId of GetJoinedSessionsResponse.clientSessions) {
-//                                     if (msg.clientSession != sessionId) {
-//                                         WSServer.clients.forEach(function each(client) {
-//                                             if (client.readyState == wsModule.OPEN && client.id == sessionId) {
-//                                                 logger.debug(`    [1-603-00] WS [${client.id}] Send  msg : ${msg.textValue}`);
-//                                                 const wsMsg = {
-//                                                     type: "text",
-//                                                     msg: msg.textValue,
-//                                                 };
-//                                                 client.send(JSON.stringify(wsMsg));
-//                                             }
-//                                         });
-//                                     }
-//                                 }
-//                             }
-//                         });
-//                         break;
-//                     case "UpdateFiles":
-//                         GetJoinedSessionsRequest = {
-//                             id: uuidv4(),
-//                             roomId: msg.roomId,
-//                             clientSession: msg.clientSession,
-//                         };
-//                         logger.debug(`UpdateFiles  [1-106-00] gRPC Send GetJoinedSessionsRequest : ${JSON.stringify(GetJoinedSessionsRequest)}`);
-//                         gRPCRoomServiceClient.GetJoinedSessions(GetJoinedSessionsRequest, (error, GetJoinedSessionsResponse) => {
-//                             if (error) {
-//                                 logger.error(`UpdateFiles  [1-106-51] gRPC GetJoinedSessions Error RPC_ID : ${GetJoinedSessionsRequest.id} | ${error}`);
-//                             } else {
-//                                 logger.debug(`UpdateFiles  [1-106-01] gRPC Recv GetJoinedSessionsResponse : ${JSON.stringify(GetJoinedSessionsResponse)}`);
-//                                 for (const sessionId of GetJoinedSessionsResponse.clientSessions) {
-//                                     logger.debug(`UpdateFiles ${sessionId}`);
+            if (msg != {}) {
+                let GetJoinedSessionsRequest = {};
+                switch (topic) {
+                    case "TextChanged":
+                        GetJoinedSessionsRequest = {
+                            id: uuidv4(),
+                            roomId: msg.roomId,
+                            clientSession: msg.clientSession,
+                        };
+                        logger.debug(`  [1-106-00] gRPC Send GetJoinedSessionsRequest : ${JSON.stringify(GetJoinedSessionsRequest)}`);
+                        gRPCRoomServiceClient.GetJoinedSessions(GetJoinedSessionsRequest, (error, GetJoinedSessionsResponse) => {
+                            if (error) {
+                                logger.error(`  [1-106-51] gRPC GetJoinedSessions Error RPC_ID : ${GetJoinedSessionsRequest.id} | ${error}`);
+                            } else {
+                                logger.debug(`  [1-106-01] gRPC Recv GetJoinedSessionsResponse : ${JSON.stringify(GetJoinedSessionsResponse)}`);
+                                for (const sessionId of GetJoinedSessionsResponse.clientSessions) {
+                                    if (msg.clientSession != sessionId) {
+                                        WSServer.clients.forEach(function each(client) {
+                                            if (client.readyState == wsModule.OPEN && client.id == sessionId) {
+                                                logger.debug(`    [1-603-00] WS [${client.id}] Send  msg : ${msg.textValue}`);
+                                                const wsMsg = {
+                                                    type: "text",
+                                                    msg: msg.textValue,
+                                                };
+                                                client.send(JSON.stringify(wsMsg));
+                                            }
+                                        });
+                                    }
+                                }
+                            }
+                        });
+                        break;
+                    case "UpdateFiles":
+                        GetJoinedSessionsRequest = {
+                            id: uuidv4(),
+                            roomId: msg.roomId,
+                            clientSession: msg.clientSession,
+                        };
+                        logger.debug(`UpdateFiles  [1-106-00] gRPC Send GetJoinedSessionsRequest : ${JSON.stringify(GetJoinedSessionsRequest)}`);
+                        gRPCRoomServiceClient.GetJoinedSessions(GetJoinedSessionsRequest, (error, GetJoinedSessionsResponse) => {
+                            if (error) {
+                                logger.error(`UpdateFiles  [1-106-51] gRPC GetJoinedSessions Error RPC_ID : ${GetJoinedSessionsRequest.id} | ${error}`);
+                            } else {
+                                logger.debug(`UpdateFiles  [1-106-01] gRPC Recv GetJoinedSessionsResponse : ${JSON.stringify(GetJoinedSessionsResponse)}`);
+                                for (const sessionId of GetJoinedSessionsResponse.clientSessions) {
+                                    logger.debug(`UpdateFiles ${sessionId}`);
 
-//                                     WSServer.clients.forEach(function each(client) {
-//                                         if (client.readyState == wsModule.OPEN && client.id == sessionId) {
-//                                             const wsMsg = {
-//                                                 type: "file",
-//                                                 fileIds: msg.fileIds,
-//                                                 leftStorage: GetJoinedSessionsResponse.leftStorage,
-//                                             };
-//                                             logger.debug(`UpdateFiles send : ${sessionId}`);
-//                                             client.send(JSON.stringify(wsMsg));
-//                                         }
-//                                     });
-//                                 }
-//                             }
-//                         });
-//                         break;
-//                 }
-//             }
-//         },
-//     });
-// }
+                                    WSServer.clients.forEach(function each(client) {
+                                        if (client.readyState == wsModule.OPEN && client.id == sessionId) {
+                                            const wsMsg = {
+                                                type: "file",
+                                                fileIds: msg.fileIds,
+                                                leftStorage: GetJoinedSessionsResponse.leftStorage,
+                                            };
+                                            logger.debug(`UpdateFiles send : ${sessionId}`);
+                                            client.send(JSON.stringify(wsMsg));
+                                        }
+                                    });
+                                }
+                            }
+                        });
+                        break;
+                }
+            }
+        },
+    });
+}
 
-// kafkaConsumerListener();
+kafkaConsumerListener();
