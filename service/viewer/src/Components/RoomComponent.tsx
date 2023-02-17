@@ -137,7 +137,7 @@ function RoomComponent(props: {ws: WebSocket}) {
                     var xhr = new XMLHttpRequest();
                     const form = new FormData();
                     form.append("file", file);
-                    const url = `http://${window.location.host}/upload?room=${roomId}&name=${file.name}`;
+                    const url = `https://${window.location.host}/upload?room=${roomId}&name=${file.name}`;
 
                     setUploadFiles((oldArr) => {
                         const newArr = [...oldArr];
@@ -202,7 +202,7 @@ function RoomComponent(props: {ws: WebSocket}) {
     };
 
     function deleteFile(filename: String) {
-        const url = `http://${window.location.host}/file?room=${roomId}&name=${filename}`;
+        const url = `https://${window.location.host}/file?room=${roomId}&name=${filename}`;
         fetch(url, {
             method: "DELETE",
         }).then((d) => console.log(d));

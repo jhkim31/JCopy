@@ -17,7 +17,7 @@ const Main = styled.div`
 
 function App() {
     const host = window.location.host;
-    let ws = new WebSocket(`ws://${host}`);
+    let ws = new WebSocket(`wss://${host}`);
 
     return (
         <Main>

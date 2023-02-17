@@ -17,19 +17,16 @@ const aws = require("aws-sdk");
 aws.config.loadFromPath("./s3.json");
 
 const s3 = new aws.S3();
-const upload = multer(
-    {
-        storage: multerS3({
-            s3: s3,
-            bucket: "jcopy-storage",
-            key: function (req, file, cb) {
-                file.originalname = Buffer.from(file.originalname, "latin1").toString("utf8");
-                cb(null, req.query.room + "/" + file.originalname);
-            },
-        }),
-    },
-    "NONE"
-);
+const upload = multer({
+    storage: multerS3({
+        s3: s3,
+        bucket: "jcopy-storage",
+        key: function (req, file, cb) {
+            file.originalname = Buffer.from(file.originalname, "latin1").toString("utf8");
+            cb(null, req.query.room + "/" + file.originalname);
+        },
+    }),
+});
 
 // 버킷 비우는 스크립트
 
@@ -94,8 +91,10 @@ const producer = kafka.producer({createPartitioner: Partitioners.LegacyPartition
 const consumer = kafka.consumer({groupId: config.kafka.groupid.gateway});
 const redisClient = createClient({url: `redis://${config.redis.host}:${config.redis.port}`, legacyMode: true});
 const Express = express();
+
 Express.use(express.static("./build"));
-Express.use(cors());
+
+// Express.use(cors());
 
 (async () => {
     await producer.connect();
@@ -131,28 +130,31 @@ Express.use(
 );
 
 Express.get("/", (req, res) => {
+    console.log("get /");
     if (req.headers["user-agent"].includes("ELB-HealthChecker")) {
         res.send("health check");
         req.session.destroy();
     } else {
+        console.log("redirect");
         logger.info(`[1-401-00] ${req.method} ${req.originalUrl} ${req.socket.remoteAddress}  ${JSON.stringify(req.params)} | session-id : ${req.session.id}`);
         res.redirect("/home");
     }
 });
 
 Express.get("/home", (req, res) => {
+	console.log("/home");
     logger.info(`[1-402-00] ${req.method} ${req.originalUrl} ${req.socket.remoteAddress}  ${JSON.stringify(req.params)} | session-id : ${req.session.id}`);
-    res.sendFile("index.html", {root: "."});
+    res.sendFile("build/index2.html", {root: "."});
 });
 
 Express.get("/joinroom", (req, res) => {
     logger.info(`[1-403-00] ${req.method} ${req.originalUrl} ${req.socket.remoteAddress}  ${JSON.stringify(req.params)} | session-id : ${req.session.id}`);
-    res.sendFile("index.html", {root: "."});
+    res.sendFile("build/index2.html", {root: "."});
 });
 
 Express.get("/room/*", (req, res) => {
     logger.info(`[1-404-00] ${req.method} ${req.originalUrl} ${req.socket.remoteAddress}  ${JSON.stringify(req.params)} | session-id : ${req.session.id}`);
-    res.sendFile("/index.html", {root: "."});
+    res.sendFile("build/index2.html", {root: "."});
 });
 
 Express.get("/text", (req, res) => {
