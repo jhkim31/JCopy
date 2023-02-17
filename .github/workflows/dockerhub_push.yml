@@ -14,7 +14,7 @@ jobs:
 
       - name: config file create
         run : |
-          echo "{\"accessKeyId\":\"${{secrets.AWS_S3_ACCESS_KEY}}\",\"secretAccessKey\":\"${{secrets.AWS_S3_SECRET_ACCESS_KEY}}\",\"region\":\"ap-northeast-2\"}" >> ./src/gateway/s3.json
+          echo "{\"accessKeyId\":\"${{secrets.AWS_S3_ACCESS_KEY}}\",\"secretAccessKey\":\"${{secrets.AWS_S3_SECRET_ACCESS_KEY}}\",\"region\":\"ap-northeast-2\"}" > ./service/gateway/s3.json
 
       - name: Login to Dockerhub
         uses: docker/login-action@v1
@@ -26,22 +26,22 @@ jobs:
         uses: docker/build-push-action@v2
         with:
           context: .
-          file: ./src/gateway/Dockerfile
-          tags: jhkimdocker/jcopy-gateway:v0.1.5
+          file: ./service/gateway/Dockerfile
+          tags: jhkimdocker/jcopy-gateway:v0.1.7
           push: true
 
       - name: room test
         uses: docker/build-push-action@v2
         with:
           context: .
-          file: ./src/room/Dockerfile
-          tags: jhkimdocker/jcopy-room:v0.1.4
-          push: false
+          file: ./service/room/Dockerfile
+          tags: jhkimdocker/jcopy-room:v0.1.7
+          push: true
 
       - name: storage Test
         uses: docker/build-push-action@v2
         with:
           context: .
-          file: ./src/storage/Dockerfile
-          tags: jhkimdocker/jcopy-storage:v0.1.4
-          push: false
+          file: ./service/storage/Dockerfile
+          tags: jhkimdocker/jcopy-storage:v0.1.7
+          push: true
