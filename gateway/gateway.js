@@ -60,6 +60,10 @@ let config = null;
 if (process.env.NODE_ENV == "develop") {
     const file = fs.readFileSync("../config.yaml", "utf8");
     config = YAML.parse(file).develop;
+    const kafkaFile = fs.readFileSymc(".kafkaconfig.yaml", "utf8");
+    kafkaConfig = YAML.parse(kafkaFile).develop;
+    config.kafka.brokers = kafkaConfig.kafka.brokers;
+    config.kafka.groupid = kafkaCOnfig.kafka.groupid;
 }
 if (process.env.NODE_ENV == "production") {
     const file = fs.readFileSync("./config.yaml", "utf8");

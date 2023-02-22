@@ -21,7 +21,7 @@
   },
   "scripts": {
     "start": "react-scripts start",
-    "build": "react-scripts build && rm -rf ../gateway/build && mv./build/index.html ./build/index2.html &&  mv ./build ../gateway/",
+    "build": "react-scripts build && mv ./build/index.html ./build/index2.html &&  mv ./build ../gateway/",
     "test": "react-scripts test",
     "eject": "react-scripts eject"
   },

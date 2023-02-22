@@ -1,0 +1,48 @@
+name: ALL Container Deploy Hub
+
+on:
+  push:
+    branches:
+      - directory_clean
+jobs:
+  build-test:
+    runs-on: ubuntu-latest
+    env:
+      CI: false
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+
+      - name: config file create
+        run: |
+          echo "{\"accessKeyId\":\"${{secrets.AWS_S3_ACCESS_KEY}}\",\"secretAccessKey\":\"${{secrets.AWS_S3_SECRET_ACCESS_KEY}}\",\"region\":\"ap-northeast-2\"}" > ./gateway/s3.json
+
+      - name: react build
+        uses: actions/setup-node@v3
+        with:
+          node-version: 19
+          cache: 'npm'
+          cache-dependency-path: viewer/package-lock.json
+
+      - name: install
+        working-directory: ./viewer
+        run: npm install
+
+      - name: build
+        working-directory: ./viewer
+        run: npm run build
+
+      - name: Login to Dockerhub
+        uses: docker/login-action@v1
+        with:
+          username: ${{secrets.DOCKERHUB_USERNAME}}
+          password: ${{secrets.DOCKERHUB_TOKEN}}
+
+      - name: gateway Test
+        uses: docker/build-push-action@v2
+        with:
+          context: .
+          file: ./gateway/Dockerfile
+          tags: jhkimdocker/jcopy-gateway:vTEST
+          push: true
