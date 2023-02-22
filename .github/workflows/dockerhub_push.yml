@@ -2,8 +2,8 @@ name: ALL Container Deploy Hub
 
 on:
   pull_request:
-    types: [closed]      
-    branches: 
+    types: [closed]
+    branches:
       - master
 jobs:
   build-test:

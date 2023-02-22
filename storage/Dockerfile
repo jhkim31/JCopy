@@ -4,11 +4,11 @@ RUN mkdir /workspace
 RUN apt-get update -y
 RUN apt-get install vim -y
 
-COPY service/config.yaml /workspace/config.yaml
-COPY service/proto/jcopy.proto /workspace/jcopy.proto
-COPY service/storage/storage.js /workspace/storage.js
-COPY service/storage/package.json /workspace/package.json
-COPY service/storage/logger.js /workspace/logger.js
+COPY config.yaml /workspace/config.yaml
+COPY proto/jcopy.proto /workspace/jcopy.proto
+COPY storage/storage.js /workspace/storage.js
+COPY storage/package.json /workspace/package.json
+COPY storage/logger.js /workspace/logger.js
 
 WORKDIR /workspace
 

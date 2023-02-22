@@ -46,19 +46,3 @@ jobs:
           file: ./gateway/Dockerfile
           tags: jhkimdocker/jcopy-gateway:vTEST
           push: true
-
-      # - name: room test
-      #   uses: docker/build-push-action@v2
-      #   with:
-      #     context: .
-      #     file: ./room/Dockerfile
-      #     tags: jhkimdocker/jcopy-room:${{secrets.VERSION}}
-      #     push: true
-
-      # - name: storage Test
-      #   uses: docker/build-push-action@v2
-      #   with:
-      #     context: .
-      #     file: ./storage/Dockerfile
-      #     tags: jhkimdocker/jcopy-storage:${{secrets.VERSION}}
-      #     push: true
