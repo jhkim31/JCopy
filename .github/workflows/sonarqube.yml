@@ -1,9 +1,9 @@
-name: Build
+name: sonarqube Test
 
 on:
   push:
     branches:
-      - directory_clean
+      - master
 
 
 jobs:
