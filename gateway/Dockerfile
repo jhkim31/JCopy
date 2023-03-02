@@ -19,4 +19,4 @@ RUN npm install
 
 ENV NODE_ENV=production
 
-ENTRYPOINT tail -f /dev/null
+ENTRYPOINT node gateway.js
