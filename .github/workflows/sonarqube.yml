@@ -1,10 +1,8 @@
-name: Build
+name: sonarqube Test
 
 on:
-  push:
-    branches:
-      - directory_clean
-
+  pull_request:
+    types: [opened]
 
 jobs:
   build:
