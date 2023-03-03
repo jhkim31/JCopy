@@ -1,5 +1,5 @@
 # JCopy
-
+https://jcopy.net/home
 # 1. 개요
 
 파일 전송을 위한 웹 어플리케이션
@@ -15,6 +15,7 @@
 2. 실시간 자료 확인 가능
 
 # 구조
+![image](/Image/architecture.png)
 
 # 사용 기술
 
