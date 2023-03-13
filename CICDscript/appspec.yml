@@ -2,15 +2,15 @@ version: 0.0
 os: linux
 files:
   - source:  /
-    destination: /home/ubuntu/run_script
+    destination: /home/ubuntu/CICDscript
 
 permissions:
-  - object: /home/ubuntu/run_script
+  - object: /home/ubuntu/CICDscript
     owner: ubuntu
     group: ubuntu
 
 hooks:
     AfterInstall:
-      - location: ./init.sh
+      - location: ./update_script.sh
         timeout: 360
         runas: ubuntu
