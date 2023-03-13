@@ -1,0 +1,16 @@
+version: 0.0
+os: linux
+files:
+  - source:  /
+    destination: /home/ubuntu/run_script
+
+permissions:
+  - object: /home/ubuntu/run_script
+    owner: ubuntu
+    group: ubuntu
+
+hooks:
+    AfterInstall:
+      - location: ./init.sh
+        timeout: 360
+        runas: ubuntu
