@@ -1,0 +1,16 @@
+version: 0.0
+os: linux
+files:
+  - source:  /
+    destination: /home/ubuntu/CICDscript
+
+permissions:
+  - object: /home/ubuntu/CICDscript
+    owner: ubuntu
+    group: ubuntu
+
+hooks:
+    AfterInstall:
+      - location: ./update_script.sh
+        timeout: 360
+        runas: ubuntu
