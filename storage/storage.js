@@ -12,6 +12,11 @@ let config = {};
 if (process.env.NODE_ENV == "develop") {
     const file = fs.readFileSync("../config.yaml", "utf8");
     config = YAML.parse(file).develop;
+    config.kafka = {};
+    const kafkaFile = fs.readFileSync("../.kafkaconfig.yaml", "utf8");
+    kafkaConfig = YAML.parse(kafkaFile);
+    config.kafka.brokers = kafkaConfig.kafka.brokers;
+    config.kafka.groupid = kafkaConfig.kafka.groupid;
 }
 if (process.env.NODE_ENV == "production") {
     const file = fs.readFileSync("./config.yaml", "utf8");
@@ -134,7 +139,7 @@ gRPCServer.addService(StorageProto.StorageService.service, {
 });
 
 async function kafkaConsumerListener() {
-    await consumer.subscribe({topics: ["ChangeText"]});
+    await consumer.subscribe({topics: ["ChangeText"], fromBeginning: false});
     logger.debug('[3-301-00] Kafka Subscribe Topics "ChangeText"');
     await consumer.run({
         eachMessage: async ({topic, partition, message, heartbeat, pause}) => {
