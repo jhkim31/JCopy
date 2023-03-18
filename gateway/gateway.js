@@ -28,8 +28,6 @@ const upload = multer({
     }),
 });
 
-// 버킷 비우는 스크립트
-
 // const aws = require("aws-sdk");
 // aws.config.loadFromPath("./s3.json");
 
