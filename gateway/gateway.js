@@ -28,8 +28,6 @@ const upload = multer({
     }),
 });
 
-// 버킷 비우는 스크립트
-
 // const aws = require("aws-sdk");
 // aws.config.loadFromPath("./s3.json");
 
@@ -60,10 +58,11 @@ let config = null;
 if (process.env.NODE_ENV == "develop") {
     const file = fs.readFileSync("../config.yaml", "utf8");
     config = YAML.parse(file).develop;
-    const kafkaFile = fs.readFileSymc(".kafkaconfig.yaml", "utf8");
-    kafkaConfig = YAML.parse(kafkaFile).develop;
+    config.kafka = {};
+    const kafkaFile = fs.readFileSync("../.kafkaconfig.yaml", "utf8");
+    kafkaConfig = YAML.parse(kafkaFile);
     config.kafka.brokers = kafkaConfig.kafka.brokers;
-    config.kafka.groupid = kafkaCOnfig.kafka.groupid;
+    config.kafka.groupid = kafkaConfig.kafka.groupid;
 }
 if (process.env.NODE_ENV == "production") {
     const file = fs.readFileSync("./config.yaml", "utf8");
@@ -459,7 +458,7 @@ WSServer.on("connection", async (ws, request) => {
 });
 
 async function kafkaConsumerListener() {
-    consumer.subscribe({topics: ["TextChanged", "UpdateFiles"]}).then((d) => console.log("subscribe : ", d));
+    consumer.subscribe({topics: ["TextChanged", "UpdateFiles"], fromBeginning: false}).then((d) => console.log("subscribe : ", d));
 
     logger.info('[1-301-00] Kafka Subscribe Topics "TextChanged"');
     await consumer.run({

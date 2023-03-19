@@ -11,6 +11,11 @@ let config = {};
 if (process.env.NODE_ENV == "develop") {
     const file = fs.readFileSync("../config.yaml", "utf8");
     config = YAML.parse(file).develop;
+    config.kafka = {};
+    const kafkaFile = fs.readFileSync("../.kafkaconfig.yaml", "utf8");
+    kafkaConfig = YAML.parse(kafkaFile);
+    config.kafka.brokers = kafkaConfig.kafka.brokers;
+    config.kafka.groupid = kafkaConfig.kafka.groupid;
 }
 if (process.env.NODE_ENV == "production") {
     const file = fs.readFileSync("./config.yaml", "utf8");
@@ -220,7 +225,7 @@ gRPCServer.addService(RoomProto.RoomService.service, {
 });
 
 async function kafkaConsumerListener() {
-    consumer.subscribe({topics: ["UploadFile", "DeleteFile"]}).then((d) => console.log("subscribe : ", d));
+    consumer.subscribe({topics: ["UploadFile", "DeleteFile"], fromBeginning: false}).then((d) => console.log("subscribe : ", d));
 
     await consumer.run({
         eachMessage: async ({topic, partition, message, heartbeat, pause}) => {

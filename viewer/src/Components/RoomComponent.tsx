@@ -4,20 +4,35 @@ import styled from "styled-components";
 import {FileUploader} from "react-drag-drop-files";
 
 const Room = styled.div`
+    display: flex;
     width: 100%;
     height: 100%;
+    flex-direction: column;
 `;
 
 const RoomID = styled.div`
     height: 100px;
-    background: yellow;
+    font-size: 1.5em;
+    font-weight:bold;
 `;
 
 const TextField = styled.textarea`
-    width: 90%;
+    width: 95%;
     height: 400px;
     margin: 10px;
 `;
+
+const FileRow = styled.div`
+    &:hover {
+        background: gray;
+    }
+`
+const FileDeleteButton = styled.span`
+    cursor: pointer;
+    &:hover {
+        color: red;
+    }
+`
 
 function RoomComponent(props: {ws: WebSocket}) {
     const navigate = useNavigate();
@@ -42,6 +57,10 @@ function RoomComponent(props: {ws: WebSocket}) {
         roomId: "",
         session: "",
     });
+    let expireTime = useRef<any>({
+        time: Number
+    });
+
     const [textValue, setTextValue] = useState<string>("");
     const [roomId, setRoomId] = useState<string>("");
     const [leftStorage, setLeftStorage] = useState(10_000_000);
@@ -50,6 +69,7 @@ function RoomComponent(props: {ws: WebSocket}) {
     const [files, setFiles] = useState<string[]>([]);
     const [uploadFiles, setUploadFiles] = useState<string[]>([]);
     const [uploadProgress, setUploadProgress] = useState<{[file: string]: number}>({});
+    console.log(expireTime);
 
     useEffect(() => {
         const pathRoomId = window.location.pathname.replace("/room/", "");
@@ -62,10 +82,11 @@ function RoomComponent(props: {ws: WebSocket}) {
                     setSession(d.session);
                     setFiles(d.files);
                     setLeftStorage(d.leftStorage);
-                    const expireTime = new Date(d.expireTime).getTime();
-                    const now = new Date().getTime();
-                    setLeftTime(expireTime - now);
-
+                    console.log(d.expireTime);
+                    console.log(new Date(d.expireTime));
+                    const t = new Date(d.expireTime).getTime();
+                    expireTime.current.time = t;
+                    setLeftTime(expireTime.current.time - new Date().getTime());
                     roomInfo.current.text = d.text;
                     roomInfo.current.session = d.session;
                     roomInfo.current.roomId = d.roomId;
@@ -84,9 +105,9 @@ function RoomComponent(props: {ws: WebSocket}) {
         }, 1000 * 10);
 
         setInterval(() => {
-            setLeftTime((prev) => prev - 1000);
+            const leftTime = expireTime.current.time - new Date().getTime();
+            setLeftTime(leftTime);
             if (roomInfo.current.send && roomInfo.current.roomId != "") {
-                // text change event
                 ws.send(
                     JSON.stringify({
                         type: "text",
@@ -124,21 +145,27 @@ function RoomComponent(props: {ws: WebSocket}) {
     }, []);
 
     function textHandler(e: React.ChangeEvent<HTMLTextAreaElement>) {
-        setTextValue(e.target.value);
-        roomInfo.current.text.value = e.target.value;
-        roomInfo.current.send = true;
+        if (leftTime <= 0){
+            alert("남은 시간이 없습니다. 방을 다시 생성하세요");
+        } else {
+            setTextValue(e.target.value);
+            roomInfo.current.text.value = e.target.value;
+            roomInfo.current.send = true;
+        }
     }
 
     const handleChange = async (file: File) => {
-        fetch(`/uploadable?roomId=${roomId}&size=${file.size}`)
+        if (leftTime <= 0){
+            alert("남은 시간이 없습니다. 방을 다시 생성하세요");
+        } else {
+            fetch(`/uploadable?roomId=${roomId}&size=${file.size}`)
             .then((d) => d.json())
             .then((d) => {
                 if (d.res == 1) {
                     var xhr = new XMLHttpRequest();
                     const form = new FormData();
                     form.append("file", file);
-                    const url = `https://${window.location.host}/upload?room=${roomId}&name=${file.name}`;
-
+                    const url = `/upload?room=${roomId}&name=${file.name}`;
                     setUploadFiles((oldArr) => {
                         const newArr = [...oldArr];
                         newArr.push(file.name);
@@ -182,27 +209,11 @@ function RoomComponent(props: {ws: WebSocket}) {
                     alert(d.msg);
                 }
             });
-
-        // fetch(url, {
-        //     method: "PUT",
-        //     body: form,
-        // })
-        // .then(d => d.json())
-        // .then(d => {
-        //     if (d.error != 0){
-        //         alert(`${d.file} : ${d.msg}`);
-        //     }
-        //     setUploadFiles(oldArr => {
-        //         const tmp = new Set(oldArr);
-        //         tmp.delete(d.file);
-        //         const newArr = Array.from(tmp);
-        //         return newArr;
-        //     });
-        // })
+        }
     };
 
     function deleteFile(filename: String) {
-        const url = `https://${window.location.host}/file?room=${roomId}&name=${filename}`;
+        const url = `/file?room=${roomId}&name=${filename}`;
         fetch(url, {
             method: "DELETE",
         }).then((d) => console.log(d));
@@ -210,12 +221,14 @@ function RoomComponent(props: {ws: WebSocket}) {
     return (
         <Room>
             <RoomID>
-                <div>{roomId}</div>
-                <div>{session}</div>
-                <div>남은 용량 : {leftStorage / 1_000_000}MB</div>
-                <div>남은 시간 : {Math.round(leftTime / 1000)}초</div>
+                <div>공유 ID : <span onClick={() => {
+                    navigator.clipboard.writeText(window.location.href);
+                    alert("공유 URL이 복사되었습니다!");
+                }}>{roomId}</span></div>
+                <div>남은 용량 : {(leftStorage / 1_000_000).toFixed(1)}MB</div>
+                <div>남은 시간 : {(leftTime / 1000) > 60 ? Math.floor((leftTime / 1000) / 60) + "분 ": ""}{Math.round(leftTime / 1000) % 60}초</div>
             </RoomID>
-            <TextField onChange={textHandler} value={textValue} />
+            <TextField placeholder="공유할 텍스트를 입력하세요" onChange={textHandler} value={textValue} />
             <div id="fileList">
                 <div>업로드중 ...</div>
                 {uploadFiles.map((item) => {
@@ -232,17 +245,17 @@ function RoomComponent(props: {ws: WebSocket}) {
                 {files.map((item) => {
                     const url = `https://jcopy-storage.s3.ap-northeast-2.amazonaws.com/${roomId}/${item}`;
                     return (
-                        <div>
-                            <span onClick={() => deleteFile(item)}>x </span>
+                        <FileRow>
+                            <FileDeleteButton onClick={() => deleteFile(item)} >x </FileDeleteButton>
                             <a href={url} key={Math.random()} download>
                                 {item}
                             </a>
-                        </div>
+                        </FileRow>
                     );
                 })}
                 <hr />
             </div>
-            <FileUploader handleChange={handleChange} name="file" />
+            <FileUploader handleChange={handleChange} maxSize={10} name="file" />
         </Room>
     );
 }
