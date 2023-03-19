@@ -1,12 +1,11 @@
 import styled from "styled-components";
-import {BrowserRouter, Routes, Route, useNavigate} from "react-router-dom";
+import {useNavigate} from "react-router-dom";
 
 const Main = styled.div`
     display: flex;
     align-items: center;
     justify-content: center;
     height: 100%;
-    background: #2a9df5;
 `;
 
 const HomeBtn = styled.div`
@@ -14,11 +13,14 @@ const HomeBtn = styled.div`
     align-items: center;
     justify-content: center;
     width: 200px;
-    height: 200px;
-    background: gray;
-    margin: 20px;
-`;
+    height: 100px;
+    background: white;
 
+    margin: 20px;
+    &:hover {
+        background-color: gray;
+    }
+`;
 
 function Home() {
     const navigate = useNavigate();
@@ -30,7 +32,7 @@ function Home() {
                 if (d.roomId) {
                     return navigate(`/room/${d.roomId}`);
                 } else {
-                    alert('방 생성에 문제가 있습니다!');
+                    alert("방 생성에 문제가 있습니다!");
                 }
             });
     }
@@ -40,10 +42,10 @@ function Home() {
     }
     return (
         <Main>
-            <HomeBtn onClick={createRoom}>방만들기</HomeBtn>
-            <HomeBtn onClick={joinRoom}>참가하기</HomeBtn>
+            <HomeBtn onClick={createRoom}>공유하기</HomeBtn>
+            <HomeBtn onClick={joinRoom}>공유받기</HomeBtn>
         </Main>
     );
 }
 
-export default Home
+export default Home;

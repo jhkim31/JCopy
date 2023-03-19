@@ -1,5 +1,19 @@
 import React, {useEffect, useState} from "react";
 import {useNavigate} from "react-router-dom";
+import styled from "styled-components";
+
+const Main = styled.div`
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 100%;
+`;
+
+const TextField = styled.input`
+    width: 300px;
+    height: 50px;
+    font-size: 1.3em;
+`
 
 function JoinRoom() {
     const navigate = useNavigate();
@@ -8,42 +22,25 @@ function JoinRoom() {
     function inputHandler(e: React.ChangeEvent<HTMLInputElement>) {
         setRoomId(e.target.value);
     }
-    async function joinRoom() {
-        fetch(`/joinroom?roomId=${roomId}`, {method: "POST"})
-            .then((d) => d.json())
-            .then((d) => {
-                if (d.error == 0){
-                    const state = d;
-                    return navigate(`/room/${d.roomId}`);
-                } else {
-                    alert('해당 방이 없습니다!');
-                    return navigate('/home');
-                }
 
-            });
-    }
-
-    async function enterPress(e: React.KeyboardEvent){
-        if (e.key == 'Enter'){
+    async function enterPress(e: React.KeyboardEvent) {
+        if (e.key == "Enter") {
             fetch(`/joinroom?roomId=${roomId}`, {method: "POST"})
-            .then((d) => d.json())
-            .then((d) => {
-                if (d.error == 0){
-                    const state = d;
-                    return navigate(`/room/${d.roomId}`);
-                } else {
-                    alert('해당 방이 없습니다!');
-                    return navigate('/home');
-                }
-
-            });
+                .then((d) => d.json())
+                .then((d) => {
+                    if (d.error == 0) {
+                        const state = d;
+                        return navigate(`/room/${d.roomId}`);
+                    } else {
+                        alert("해당 ID의 방이 없습니다!");
+                    }
+                });
         }
     }
     return (
-        <div>
-            <input type="text" value={roomId} onChange={inputHandler} onKeyDown={enterPress} autoFocus></input>
-            <button onClick={joinRoom}>join!</button>
-        </div>
+        <Main>
+            <TextField type="text" value={roomId} onChange={inputHandler} onKeyDown={enterPress} autoFocus placeholder="방 ID를 입력하고 엔터를 누르세요"></TextField>
+        </Main>
     );
 }
 
