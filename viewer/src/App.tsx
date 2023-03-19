@@ -4,6 +4,8 @@ import styled from "styled-components";
 import RoomComponent from "./Components/RoomComponent";
 import JoinRoom from "./Components/JoinRoom";
 import Home from "./Components/Home";
+import Footer from "./Components/Footer";
+import Header from "./Components/Header";
 import "./App.css";
 
 const Wrapper = styled.div`
@@ -12,20 +14,12 @@ const Wrapper = styled.div`
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    background: #2a9df5;
+    background: #bbb;
 `
 const MainPage = styled.div`
-    width:100%;
+    width:90%;
     flex: 1;
 `;
-
-const Footer = styled.footer`
-    height: 100px;
-`;
-
-const Header = styled.header`
-    height: 100px;
-`
 
 function App() {
     const host = window.location.host;
@@ -40,6 +34,7 @@ function App() {
 
     return (
         <Wrapper>
+            <Header/>
             <MainPage>
                 <BrowserRouter>
                     <Routes>
@@ -49,7 +44,7 @@ function App() {
                     </Routes>
                 </BrowserRouter>
             </MainPage>
-            <Footer>Copyright 김재현</Footer>
+            <Footer/>
         </Wrapper>
     );
 }
