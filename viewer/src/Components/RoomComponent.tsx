@@ -107,7 +107,7 @@ function RoomComponent(props: {ws: WebSocket}) {
         setInterval(() => {
             const leftTime = expireTime.current.time - new Date().getTime();
             setLeftTime(leftTime);
-            if (roomInfo.current.send && roomInfo.current.roomId != "") {
+            if (leftTime > 0 && roomInfo.current.send && roomInfo.current.roomId != "") {
                 ws.send(
                     JSON.stringify({
                         type: "text",
@@ -226,7 +226,7 @@ function RoomComponent(props: {ws: WebSocket}) {
                     alert("공유 URL이 복사되었습니다!");
                 }}>{roomId}</span></div>
                 <div>남은 용량 : {(leftStorage / 1_000_000).toFixed(1)}MB</div>
-                <div>남은 시간 : {(leftTime / 1000) > 60 ? Math.floor((leftTime / 1000) / 60) + "분 ": ""}{Math.round(leftTime / 1000) % 60}초</div>
+                <div>남은 시간 : {(leftTime / 1000) > 60 ? Math.floor((leftTime / 1000) / 60) + "분 ": ""}{leftTime > 0 ? Math.round(leftTime / 1000) % 60 : 0}초</div>
             </RoomID>
             <TextField placeholder="공유할 텍스트를 입력하세요" onChange={textHandler} value={textValue} />
             <div id="fileList">
