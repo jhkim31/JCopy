@@ -17,6 +17,24 @@ const aws = require("aws-sdk");
 aws.config.loadFromPath("./s3.json");
 
 const s3 = new aws.S3();
+
+let config = null;
+if (process.env.NODE_ENV == "develop") {
+    const file = fs.readFileSync("../config.yaml", "utf8");
+    config = YAML.parse(file).develop;
+    console.log(config);
+    config.kafka = {};
+    const kafkaFile = fs.readFileSync("../.kafkaconfig.yaml", "utf8");
+    kafkaConfig = YAML.parse(kafkaFile);
+    config.kafka.brokers = kafkaConfig.kafka.brokers;    
+    config.kafka.groupid = kafkaConfig.kafka.groupid;
+}
+if (process.env.NODE_ENV == "production") {
+    const file = fs.readFileSync("./config.yaml", "utf8");
+    config = YAML.parse(file).deploy;
+}
+
+
 const upload = multer({
     storage: multerS3({
         s3: s3,
@@ -28,51 +46,10 @@ const upload = multer({
     }),
 });
 
-// const aws = require("aws-sdk");
-// aws.config.loadFromPath("./s3.json");
-
-// const s3 = new aws.S3();
-// params = {
-//     Bucket: "jcopy-storage"
-// }
-// s3.listObjects(params, function (err, data) {
-//     if (err) throw err;
-//     console.log(data.Contents);
-//     for (const item of data.Contents) {
-//         s3.deleteObject(
-//             {
-//                 Bucket: "jcopy-storage", // 사용자 버켓 이름
-//                 Key: item.Key,
-//             },
-//             (err2, data2) => {
-//                 if (err2) {
-//                     throw err2;
-//                 }
-//                 console.log("s3 deleteObject ", data2);
-//             }
-//         );
-//     }
-// });
-
-let config = null;
-if (process.env.NODE_ENV == "develop") {
-    const file = fs.readFileSync("../config.yaml", "utf8");
-    config = YAML.parse(file).develop;
-    config.kafka = {};
-    const kafkaFile = fs.readFileSync("../.kafkaconfig.yaml", "utf8");
-    kafkaConfig = YAML.parse(kafkaFile);
-    config.kafka.brokers = kafkaConfig.kafka.brokers;
-    config.kafka.groupid = kafkaConfig.kafka.groupid;
-}
-if (process.env.NODE_ENV == "production") {
-    const file = fs.readFileSync("./config.yaml", "utf8");
-    config = YAML.parse(file).deploy;
-}
-
 logger.info(`[1-001-01] config\n${YAML.stringify(config)}`);
-
+console.log(config.kafka.brokers);
 const kafka = new Kafka({
-    brokers: config.kafka.brokers,
+    brokers: config.kafka.brokers,    
     logLevel: logLevel.ERROR,
 });
 const PROTO_FILE = config.grpc.proto.path;
@@ -220,7 +197,7 @@ Express.post("/room", (req, res) => {
     const CreateRoomRequest = {
         id: uuidv4(),
         clientSession: req.session.id,
-        expireTime: new Date(new Date().getTime() + 1000 * 60 * 5).getTime(),
+        expireTime: new Date(new Date().getTime() + 1000 * 599).getTime(),
     };
 
     logger.debug(`  [1-101-00] gRPC Request CreateRoomRequest : ${JSON.stringify(CreateRoomRequest)}`);
@@ -376,7 +353,7 @@ Express.delete("/file", (req, res) => {
     console.log("kafka1");
     s3.deleteObject(
         {
-            Bucket: "jcopy-storage", // 사용자 버켓 이름
+            Bucket: "jcopy-", // 사용자 버켓 이름
             Key: key,
         },
         (err, data) => {

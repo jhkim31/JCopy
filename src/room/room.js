@@ -4,8 +4,8 @@ const fs = require("fs");
 const mongoose = require("mongoose");
 const grpc = require("@grpc/grpc-js");
 const protoLoader = require("@grpc/proto-loader");
-const {v4: uuidv4} = require("uuid");
-const {Kafka, Partitioners, logLevel} = require("kafkajs");
+const { v4: uuidv4 } = require("uuid");
+const { Kafka, Partitioners, logLevel } = require("kafkajs");
 
 let config = {};
 if (process.env.NODE_ENV == "develop") {
@@ -36,8 +36,8 @@ const kafka = new Kafka({
     logLevel: logLevel.ERROR,
 });
 
-const producer = kafka.producer({createPartitioner: Partitioners.LegacyPartitioner});
-const consumer = kafka.consumer({groupId: config.kafka.groupid.room});
+const producer = kafka.producer({ createPartitioner: Partitioners.LegacyPartitioner });
+const consumer = kafka.consumer({ groupId: config.kafka.groupid.room });
 
 const pkgDefs = protoLoader.loadSync(PROTO_FILE, options);
 const RoomProto = grpc.loadPackageDefinition(pkgDefs);
@@ -54,7 +54,7 @@ const dbUrl = `mongodb://${config.mongodb.user}:${config.mongodb.pwd}@${config.m
 })();
 
 mongoose
-    .connect(dbUrl, {dbName: config.mongodb.dbName})
+    .connect(dbUrl, { dbName: config.mongodb.dbName })
     .then((e) => {
         logger.info("[2-002-01] mongodb connected");
     })
@@ -68,7 +68,7 @@ const RoomSchema = new mongoose.Schema({
     textId: String,
     leftStorage: Number,
     fileIds: [String],
-    expireAt: {type: Date, expires: 100},
+    expireAt: { type: Date, expires: 100 },
     expireTime: Date,
 });
 
@@ -141,7 +141,7 @@ gRPCServer.addService(RoomProto.RoomService.service, {
             const clientSession = JoinRoomRequest.request.clientSession;
 
             logger.debug(`  [2-702-00] Mongo Update Room ${roomId}`);
-            await Room.updateOne({roomId: roomId}, {$addToSet: {sessions: clientSession}}).then((res) => {
+            await Room.updateOne({ roomId: roomId }, { $addToSet: { sessions: clientSession } }).then((res) => {
                 if (res.modifiedCount == 0) {
                     logger.warn(`  [2-702-51] RPC_ID : ${id} | Mongo Not Search Room : ${roomId}`);
                 } else {
@@ -149,7 +149,7 @@ gRPCServer.addService(RoomProto.RoomService.service, {
                 }
             });
 
-            const room = await Room.findOne({roomId: roomId});
+            const room = await Room.findOne({ roomId: roomId });
             let JoinRoomResponse = {};
 
             if (room) {
@@ -160,7 +160,7 @@ gRPCServer.addService(RoomProto.RoomService.service, {
                     textId: room.textId,
                     fileIds: room.fileIds,
                     leftStorage: room.leftStorage,
-                    expireTime: room.expireTime
+                    expireTime: room.expireTime,
                 };
             } else {
                 JoinRoomResponse = {
@@ -186,12 +186,12 @@ gRPCServer.addService(RoomProto.RoomService.service, {
             const roomId = GetJoinedSessionsRequest.request.roomId;
             const clientSession = GetJoinedSessionsRequest.request.clientSession;
 
-            const room = await Room.findOne({roomId: roomId});
+            const room = await Room.findOne({ roomId: roomId });
             const GetJoinedSessionsResponse = {
                 id: id,
                 roomId: room.roomId,
                 clientSessions: room.sessions,
-                leftStorage: room.leftStorage
+                leftStorage: room.leftStorage,
             };
             logger.debug(`[2-106-21] gRPC Send GetJoinedSessionsResponse : ${JSON.stringify(GetJoinedSessionsResponse)}`);
             responseCallBack(null, GetJoinedSessionsResponse);
@@ -200,35 +200,34 @@ gRPCServer.addService(RoomProto.RoomService.service, {
             responseCallBack(error, null);
         }
     },
-    GetLeftStorage: async(GetLeftStorageRequest, responseCallBack) => {
+    GetLeftStorage: async (GetLeftStorageRequest, responseCallBack) => {
         console.log(GetLeftStorageRequest.request);
         const id = GetLeftStorageRequest.request.id;
         const roomId = GetLeftStorageRequest.request.roomId;
         const size = GetLeftStorageRequest.request.size;
-        try{
-            const room = await Room.findOne({roomId: roomId});
-            if (room){
+        try {
+            const room = await Room.findOne({ roomId: roomId });
+            if (room) {
                 const leftStorage = room.leftStorage;
                 const GetLeftStorageResponse = {
                     id: id,
                     roomId: roomId,
-                    leftStorage: leftStorage - size
-                }
+                    leftStorage: leftStorage - size,
+                };
                 responseCallBack(null, GetLeftStorageResponse);
             }
-        } catch(error) {
+        } catch (error) {
             console.log(error);
             responseCallBack(error, null);
         }
-    }
-
+    },
 });
 
 async function kafkaConsumerListener() {
-    consumer.subscribe({topics: ["UploadFile", "DeleteFile"], fromBeginning: false}).then((d) => console.log("subscribe : ", d));
+    consumer.subscribe({ topics: ["UploadFile", "DeleteFile"], fromBeginning: false }).then((d) => console.log("subscribe : ", d));
 
     await consumer.run({
-        eachMessage: async ({topic, partition, message, heartbeat, pause}) => {
+        eachMessage: async ({ topic, partition, message, heartbeat, pause }) => {
             let msg = {};
             try {
                 msg = JSON.parse(message.value.toString());
@@ -236,13 +235,13 @@ async function kafkaConsumerListener() {
             console.log(msg);
 
             if (msg != {}) {
-                let roomId = ""
+                let roomId = "";
                 let room = null;
                 switch (topic) {
                     case "UploadFile":
                         roomId = msg.roomId;
-                        room = await Room.findOne({roomId: roomId});
-                        if (room == null){
+                        room = await Room.findOne({ roomId: roomId });
+                        if (room == null) {
                             return;
                         }
                         console.log(roomId, room);
@@ -250,13 +249,13 @@ async function kafkaConsumerListener() {
                         console.log(room);
 
                         await Room.updateOne(
-                            {roomId: roomId},
+                            { roomId: roomId },
                             {
-                                $push: {fileIds: msg.name},
-                                $set: {leftStorage: leftStorage - msg.size},
+                                $push: { fileIds: msg.name },
+                                $set: { leftStorage: leftStorage - msg.size },
                             }
                         );
-                        room = await Room.findOne({roomId: roomId});
+                        room = await Room.findOne({ roomId: roomId });
 
                         const kafkaMsg = {
                             id: uuidv4(),
@@ -264,7 +263,7 @@ async function kafkaConsumerListener() {
                             clientSession: room.sessions,
                             fileIds: room.fileIds,
                         };
-                        const kafkaData = {topic: "UpdateFiles", messages: [{value: JSON.stringify(kafkaMsg)}]};
+                        const kafkaData = { topic: "UpdateFiles", messages: [{ value: JSON.stringify(kafkaMsg) }] };
                         logger.debug(`  [1-201-00] Produce ChangeText ${JSON.stringify(kafkaMsg)}`);
                         producer.send(kafkaData);
                         break;
@@ -273,31 +272,34 @@ async function kafkaConsumerListener() {
                         roomId = msg.roomId;
                         const filename = msg.name;
 
-                        await Room.updateOne({roomId: roomId}, {$pull : {fileIds: filename}})
-                        room = await Room.findOne({roomId: roomId});
-                        if (room == null){
+                        await Room.updateOne({ roomId: roomId }, { $pull: { fileIds: filename } });
+                        room = await Room.findOne({ roomId: roomId });
+                        if (room == null) {
                             return;
                         }
-                        console.log('roomId : ', roomId, 'room : ', room);
+                        console.log("roomId : ", roomId, "room : ", room);
                         const kafkaMsg2 = {
                             id: uuidv4(),
                             roomId: roomId,
                             clientSession: room.sessions,
                             fileIds: room.fileIds,
                         };
-                        const kafkaData2 = {topic: "UpdateFiles", messages: [{value: JSON.stringify(kafkaMsg2)}]};
+                        const kafkaData2 = { topic: "UpdateFiles", messages: [{ value: JSON.stringify(kafkaMsg2) }] };
                         logger.debug(`  [1-201-00] Produce ChangeText ${JSON.stringify(kafkaMsg2)}`);
                         producer.send(kafkaData2);
                 }
-
             }
         },
     });
 }
 
 //start the Server
-gRPCServer.bindAsync("0.0.0.0:5000", grpc.ServerCredentials.createInsecure(), (error, port) => {
-    logger.info(`[2] listening on port ${port}`);
-    gRPCServer.start();
+gRPCServer.bindAsync("0.0.0.0:15000", grpc.ServerCredentials.createInsecure(), (error, port) => {
+    if (error) {
+        console.log(error);
+    } else {
+        logger.info(`[2] listening on port ${port}`);
+        gRPCServer.start();
+    }
 });
 kafkaConsumerListener();

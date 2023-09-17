@@ -187,7 +187,7 @@ async function kafkaConsumerListener() {
 
 kafkaConsumerListener();
 
-gRPCServer.bindAsync("0.0.0.0:5001", grpc.ServerCredentials.createInsecure(), (error, port) => {
+gRPCServer.bindAsync("0.0.0.0:15001", grpc.ServerCredentials.createInsecure(), (error, port) => {
     logger.info(`listening on port ${port}`);
     gRPCServer.start();
 });
