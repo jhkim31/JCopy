@@ -10,6 +10,7 @@
 **/clears3.js
 .vscode
 **/.env
+**/.*
 
 ### macOS ###
 # General
