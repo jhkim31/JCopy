@@ -1,5 +1,5 @@
 import { JSONSchemaType } from "ajv";
-import IChangeText from "@shared/interface/kafka/IChangeText";
+import IChangeText from "../../interface/kafka/IChangeText";
 
 const ChangeTextSchema: JSONSchemaType<IChangeText> = {
     $id : "kafka.ChangeText",

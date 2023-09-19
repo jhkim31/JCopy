@@ -1,7 +1,8 @@
 import * as grpc from "@grpc/grpc-js";
-import { CreateTextRequest, CreateTextResponse } from "@shared/proto/jcopy_pb";
+import { CreateTextRequest, CreateTextResponse } from "jcopy-shared/proto/jcopy_pb";
 import { v4 as uuid } from "uuid";
 import redisClient from "@config/redis";
+import logger from "@config/logger";
 
 /**
  * grpc Storage.CreateText 구현체.
@@ -11,30 +12,40 @@ import redisClient from "@config/redis";
 
 export default async function createText(call: grpc.ServerUnaryCall<CreateTextRequest, CreateTextResponse>, callback: grpc.sendUnaryData<CreateTextResponse>): Promise<void> {
     try {
-        console.log(call.request);
         const id = call.request.getId();
         const expireTime = call.request.getExpiretime();
         const textId = `text:${uuid()}`;
         const reply = new CreateTextResponse();
 
-        const redisResult = await redisClient
-            .set(textId, "", { PXAT: new Date(expireTime).getTime() })
-            .catch((e) => {
-                console.error(e);
-            });
+        logger.debug(`gRPC Storage.CreateText receive data\n${JSON.stringify(call.request.toObject(), null, 4)}`);
 
-        if (typeof redisResult != "string") {
-            throw new Error("Redis CreateText init error");
-        }
+        await redisClient
+            .set(textId, "", { PXAT: new Date(expireTime).getTime() })
+            .then(d => {
+                if (d == "OK") {
+                    logger.info(`grpc Storage.CreateText sucess set redis\n${JSON.stringify(call.request.toObject(), null, 4)}`);
+                } else {                                        
+                    throw new Error(`gRPC Storage.CreateText redis error\n${JSON.stringify(call.request.toObject(), null, 4)}`);
+                }
+            })
+            .catch(e => {    
+                if (e instanceof Error){
+                    throw new Error(`grpc Storage.CreateText ${e.message}\n${JSON.stringify(call.request.toObject(), null, 4)}`);
+                } else {
+                    throw new Error(`gRPC Storage.CreateText redis error\n${JSON.stringify(call.request.toObject(), null, 4)}`);
+                }                
+            });
 
         reply.setId(id);
         reply.setTextid(textId);
         callback(null, reply);
     } catch (e: unknown) {
-        if (e instanceof Error) {
-            callback(e, null);
+        if (e instanceof Error) {            
+            logger.error(e.stack);
+            callback(e);
         } else {
-            callback(new Error("텍스트를 만드는중 에러가 발생했습니다. (gRPC Server CreateText)"), null);
+            logger.error(`gRPC Storage.CreateText 알 수 없는 에러 \n${e}`);
+            callback(new Error("unknown error"));
         }
     }
 }

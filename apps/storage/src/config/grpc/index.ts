@@ -1,6 +1,6 @@
 import * as grpc from "@grpc/grpc-js";
 
-import { StorageService } from "@shared/proto/jcopy_grpc_pb";
+import { StorageService } from "jcopy-shared/proto/jcopy_grpc_pb";
 import { createText, getFiles, getText } from "@grpc";
 
 const options = {
