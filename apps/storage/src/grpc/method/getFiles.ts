@@ -1,4 +1,4 @@
-import * as grpc from "@grpc/grpc-js";
+import {ServerUnaryCall, sendUnaryData} from "@grpc/grpc-js";
 import { GetFilesRequest, GetFilesResponse } from "jcopy-shared/proto/jcopy_pb";
 import redisClient from "@config/redis";
 import logger from "@config/logger";
@@ -9,7 +9,7 @@ import logger from "@config/logger";
  * @param call 
  * @param callback 
  */
-export default async function getFiles(call: grpc.ServerUnaryCall<GetFilesRequest, GetFilesResponse>, callback: grpc.sendUnaryData<GetFilesResponse>): Promise<void> {
+export default async function getFiles(call: ServerUnaryCall<GetFilesRequest, GetFilesResponse>, callback: sendUnaryData<GetFilesResponse>): Promise<void> {
     try {
         /**
          * 여기 뭔가 이상함.

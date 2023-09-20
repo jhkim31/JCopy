@@ -3,10 +3,10 @@ import assert from "assert";
 import DailyRotateFile from 'winston-daily-rotate-file';
 
 const format = winston.format;
-const { combine, timestamp, colorize, printf } = winston.format;
+const { timestamp, colorize, printf } = winston.format;
 
-const logDir = process.env.STORAGE_LOGDIR as string;
-assert.strictEqual(typeof logDir, "string", "STORAGE_LOGDIR이 선언되지 않았습니다.");
+const logDir = process.env.ROOM_LOGDIR as string;
+assert.strictEqual(typeof logDir, "string", "ROOM_LOGDIR이 선언되지 않았습니다.");
 
 const levelColors = {
     trace: 'grey',

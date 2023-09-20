@@ -1,9 +1,9 @@
-import * as grpc from "@grpc/grpc-js";
+import {ServerUnaryCall, sendUnaryData} from "@grpc/grpc-js";
 import { GetTextRequest, GetTextResponse } from "jcopy-shared/proto/jcopy_pb";
 import redisClient from "@config/redis";
 import logger from "@config/logger";
 
-export default async function getText(call: grpc.ServerUnaryCall<GetTextRequest, GetTextResponse>, callback: grpc.sendUnaryData<GetTextResponse>): Promise<void> {
+export default async function getText(call: ServerUnaryCall<GetTextRequest, GetTextResponse>, callback: sendUnaryData<GetTextResponse>): Promise<void> {
     try {
         const id = call.request.getId();
         const textId = call.request.getTextid();

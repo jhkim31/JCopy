@@ -1,5 +1,5 @@
 import { createClient } from "redis";
-import * as assert from "assert";
+import assert from "assert";
 import logger from "@config/logger";
 
 const REDIS_HOST = process.env.REDIS_HOST as string;

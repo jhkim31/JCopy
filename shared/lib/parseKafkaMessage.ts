@@ -1,4 +1,3 @@
-import logger from "@config/logger";
 import { AnyValidateFunction } from "ajv/dist/core";
 import { KafkaMessage } from "kafkajs";
 

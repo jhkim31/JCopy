@@ -1,4 +1,4 @@
-import * as grpc from "@grpc/grpc-js";
+import {Server} from "@grpc/grpc-js";
 
 import { StorageService } from "jcopy-shared/proto/jcopy_grpc_pb";
 import { createText, getFiles, getText } from "@grpc";
@@ -10,7 +10,7 @@ const options = {
     oneofs: true,
 };
 
-const grpcServer = new grpc.Server(options);
+const grpcServer = new Server(options);
 
 grpcServer.addService(StorageService, { createText, getFiles, getText });
 

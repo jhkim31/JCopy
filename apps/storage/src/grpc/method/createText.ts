@@ -1,4 +1,4 @@
-import * as grpc from "@grpc/grpc-js";
+import {ServerUnaryCall, sendUnaryData} from "@grpc/grpc-js";
 import { CreateTextRequest, CreateTextResponse } from "jcopy-shared/proto/jcopy_pb";
 import { v4 as uuid } from "uuid";
 import redisClient from "@config/redis";
@@ -10,12 +10,11 @@ import logger from "@config/logger";
  * @param callback
  */
 
-export default async function createText(call: grpc.ServerUnaryCall<CreateTextRequest, CreateTextResponse>, callback: grpc.sendUnaryData<CreateTextResponse>): Promise<void> {
+export default async function createText(call: ServerUnaryCall<CreateTextRequest, CreateTextResponse>, callback: sendUnaryData<CreateTextResponse>): Promise<void> {
     try {
         const id = call.request.getId();
         const expireTime = call.request.getExpiretime();
-        const textId = `text:${uuid()}`;
-        const reply = new CreateTextResponse();
+        const textId = `text:${uuid()}`;        
 
         logger.debug(`gRPC Storage.CreateText receive data\n${JSON.stringify(call.request.toObject(), null, 4)}`);
 
@@ -23,19 +22,20 @@ export default async function createText(call: grpc.ServerUnaryCall<CreateTextRe
             .set(textId, "", { PXAT: new Date(expireTime).getTime() })
             .then(d => {
                 if (d == "OK") {
-                    logger.info(`grpc Storage.CreateText sucess set redis\n${JSON.stringify(call.request.toObject(), null, 4)}`);
+                    logger.info(`grpc Storage.CreateText success set redis\n${JSON.stringify(call.request.toObject(), null, 4)}`);
                 } else {                                        
-                    throw new Error(`gRPC Storage.CreateText redis error\n${JSON.stringify(call.request.toObject(), null, 4)}`);
+                    throw new Error(`gRPC Storage.CreateText set redis error\n${JSON.stringify(call.request.toObject(), null, 4)}`);
                 }
             })
             .catch(e => {    
                 if (e instanceof Error){
                     throw new Error(`grpc Storage.CreateText ${e.message}\n${JSON.stringify(call.request.toObject(), null, 4)}`);
                 } else {
-                    throw new Error(`gRPC Storage.CreateText redis error\n${JSON.stringify(call.request.toObject(), null, 4)}`);
+                    throw new Error(`gRPC Storage.CreateText set redis error\n${JSON.stringify(call.request.toObject(), null, 4)}`);
                 }                
             });
 
+        const reply = new CreateTextResponse();
         reply.setId(id);
         reply.setTextid(textId);
         callback(null, reply);

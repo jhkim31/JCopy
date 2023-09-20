@@ -4,8 +4,8 @@ import DailyRotateFile from 'winston-daily-rotate-file';
 import assert from "assert";
 import path from "path";
 
-const logDir = process.env.STORAGE_LOGDIR as string;
-assert.strictEqual(typeof logDir, "string", "STORAGE_LOGDIR이 선언되지 않았습니다.");
+const logDir = process.env.ROOM_LOGDIR as string;
+assert.strictEqual(typeof logDir, "string", "ROOM_LOGDIR이 선언되지 않았습니다.");
 
 const toWinstonLogLevel = (level: logLevel): string => {
     switch (level) {
