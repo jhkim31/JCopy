@@ -16,6 +16,7 @@
             "@kafka/*": [
                 "src/kafka/*"
             ],
+            "@express/*" : ["src/express/*"]
         },
         "sourceMap": true,
         "target": "es2016" /* Set the JavaScript language version for e*/,

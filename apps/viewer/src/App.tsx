@@ -29,9 +29,9 @@ function App() {
     useEffect(() => {
         let newWs;
         if (window.location.protocol == "https:") {
-            newWs = new WebSocket(`wss://${window.location.host}`);
+            newWs = new WebSocket(`wss://${window.location.host}/ws`);
         } else {
-            newWs = new WebSocket(`ws://${window.location.host}`);
+            newWs = new WebSocket(`ws://${window.location.host}/ws`);
             newWs.onopen = (e) => {
                 console.log("open");
             }

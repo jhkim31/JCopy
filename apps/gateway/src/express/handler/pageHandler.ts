@@ -4,6 +4,6 @@ import logger from "@config/logger";
 
 const staticPath = (relative_path: string) => path.resolve(process.cwd(), relative_path);
 
-export default function PageHandler(req: Request, res: Response) {
-    res.sendFile(staticPath("./build/index2.html"), {root: "."});
+export default function pageHandler(req: Request, res: Response) {
+    res.sendFile(staticPath("./build/index2.html"));
 }

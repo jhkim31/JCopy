@@ -4,7 +4,7 @@ import { v4 as uuid } from "uuid";
 import IUpdateFiles from "jcopy-shared/interface/kafka/IUpdateFiles";
 import parseKafkaMessage from "jcopy-shared/lib/parseKafkaMessage";
 import logger from "@config/logger";
-import { GetJoinedSessionsRequest, GetJoinedSessionsResponse } from "jcopy-shared/proto/jcopy_pb";
+import { GetJoinedClientIdsRequest, GetJoinedClientIdsResponse } from "jcopy-shared/proto/jcopy_pb";
 import { grpcRoomClient } from "@config/grpc";
 import { wsClients } from "@config/ws";
 import WebSocket from "ws";
@@ -21,9 +21,9 @@ export default async function update_files(message: KafkaMessage) {
     const requestRoomId = updateFilesJsonMessage.roomId;
     const requestFileIds = updateFilesJsonMessage.fileIds;
     const requestLeftStorage = updateFilesJsonMessage.leftStorage;
-    const requestClientSession = updateFilesJsonMessage.clientSession;
+    const requestClientSession = updateFilesJsonMessage.clientId;
 
-    const getJoinedSessionRequest = new GetJoinedSessionsRequest();
+    const getJoinedSessionRequest = new GetJoinedClientIdsRequest();
 
 
     getJoinedSessionRequest.setId(uuid());
@@ -32,11 +32,11 @@ export default async function update_files(message: KafkaMessage) {
      * TODO
      * 이부분 이상함. ClientSession이 필요없는데 보냄.
      */
-    getJoinedSessionRequest.setClientsession("");
+    getJoinedSessionRequest.setClientid("");
 
-    const getJoinedSessionsResponse = await GetJoinedSessions(getJoinedSessionRequest);
+    const getJoinedSessionsResponse = await GetJoinedClientIds(getJoinedSessionRequest);
 
-    for (const joinedSession of getJoinedSessionsResponse.getClientsessionsList()) {
+    for (const joinedSession of getJoinedSessionsResponse.getClientidsList()) {
         const wsClient: WebSocket = wsClients[joinedSession];
 
         if (wsClient) {
@@ -49,9 +49,9 @@ export default async function update_files(message: KafkaMessage) {
     }
 }
 
-async function GetJoinedSessions(getJoinedSessionsRequest: GetJoinedSessionsRequest): Promise<GetJoinedSessionsResponse> {
+async function GetJoinedClientIds(getJoinedSessionsRequest: GetJoinedClientIdsRequest): Promise<GetJoinedClientIdsResponse> {
     return new Promise((resolve, reject) => {
-        grpcRoomClient.getJoinedSessions(getJoinedSessionsRequest, (error, response: GetJoinedSessionsResponse) => {
+        grpcRoomClient.getJoinedClientIds(getJoinedSessionsRequest, (error, response: GetJoinedClientIdsResponse) => {
             if (error) {
                 reject(error);
             } else {

@@ -16,7 +16,7 @@ export default async function onMessageHandler(ws: WebSocket, clientId: string, 
                     roomId: jsonMessage.roomId,
                     textId: jsonMessage.textId,
                     textValue: jsonMessage.textValue,
-                    clientSession: clientId,
+                    clientId: clientId,
                 };
 
                 const kafkaRecord: ProducerRecord = {

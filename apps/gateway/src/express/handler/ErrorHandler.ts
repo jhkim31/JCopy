@@ -7,6 +7,7 @@ import {v4 as uuid} from "uuid";
 const staticPath = (relative_path: string) => path.resolve(process.cwd(), relative_path);
 
 export default function ErrorHandler(err: unknown, req: Request, res: Response, next: NextFunction) {
+    logger.error("error handler");
     if (err instanceof Error){
         logger.error(err.stack);
         switch(err.name) {

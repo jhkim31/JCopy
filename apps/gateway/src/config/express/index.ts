@@ -25,7 +25,7 @@ Express.use(cors());
 Express.use(cookieParser());
 Express.use(express.json());
 Express.use(express.urlencoded({ extended: true }));
-Express.use(express.static(staticPath("./test")));
+Express.use(express.static(staticPath("./build")));
 
 Express.use(session({
     store: new RedisStore({ client: redisClient }),
@@ -36,13 +36,5 @@ Express.use(session({
         maxAge: cookie_maxage
     }
 }));
-
-Express.get("/", (req, res) => {        
-    res.sendFile(staticPath("./test/index2.html"));
-})
-
-Express.get("/test", (req: Request, res: Response) => {
-    res.send("test");
-})
 
 export default Express;

@@ -1,4 +1,3 @@
-import * as grpc from "@grpc/grpc-js";
 import assert from "assert";
 
 import { RoomClient, StorageClient } from "jcopy-shared/proto/jcopy_grpc_pb";
@@ -22,7 +21,7 @@ const options = {
     oneofs: true,
 };
 
-const grpcRoomClient = new RoomClient(`${GRPC_STORAGE_HOST}:${GRPC_STORAGE_PORT}`, credentials.createInsecure());
+const grpcRoomClient = new RoomClient(`${GRPC_ROOM_HOST}:${GRPC_ROOM_PORT}`, credentials.createInsecure());
 const grpcStorageClient = new StorageClient(`${GRPC_STORAGE_HOST}:${GRPC_STORAGE_PORT}`, credentials.createInsecure());
 
 export { grpcRoomClient, grpcStorageClient};

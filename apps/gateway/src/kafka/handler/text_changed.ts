@@ -4,7 +4,7 @@ import { v4 as uuid } from "uuid";
 import parseKafkaMessage from "jcopy-shared/lib/parseKafkaMessage";
 import logger from "@config/logger";
 import ITextChanged from "jcopy-shared/interface/kafka/ITextChanged";
-import { GetJoinedSessionsRequest, GetJoinedSessionsResponse } from "jcopy-shared/proto/jcopy_pb";
+import { GetJoinedClientIdsRequest, GetJoinedClientIdsResponse } from "jcopy-shared/proto/jcopy_pb";
 import { grpcRoomClient } from "@config/grpc";
 import { wsClients } from "@config/ws";
 import WebSocket from "ws";
@@ -19,18 +19,18 @@ export default async function text_changed(message: KafkaMessage) {
 
     const textChangedJsonMessage = parseKafkaMessage<ITextChanged>(message, validate);
     const requestRoomId = textChangedJsonMessage.roomId;
-    const requestClientSession = textChangedJsonMessage.clientSession;
+    const requestClientSession = textChangedJsonMessage.clientId;
     const requestTextValue = textChangedJsonMessage.textValue;
 
-    const getJoinedSessionRequest = new GetJoinedSessionsRequest();
+    const getJoinedSessionRequest = new GetJoinedClientIdsRequest();
 
     getJoinedSessionRequest.setId(uuid());
     getJoinedSessionRequest.setRoomid(requestRoomId);
-    getJoinedSessionRequest.setClientsession(requestClientSession);
+    getJoinedSessionRequest.setClientid(requestClientSession);
 
-    const getJoinedSessionsResponse = await GetJoinedSessions(getJoinedSessionRequest);
+    const getJoinedSessionsResponse = await GetJoinedClientIds(getJoinedSessionRequest);
 
-    for (const joinedSession of getJoinedSessionsResponse.getClientsessionsList()) {
+    for (const joinedSession of getJoinedSessionsResponse.getClientidsList()) {
         if (requestClientSession != joinedSession) {
             const wsClient: WebSocket = wsClients[joinedSession];
 
@@ -44,9 +44,9 @@ export default async function text_changed(message: KafkaMessage) {
     }
 }
 
-async function GetJoinedSessions(getJoinedSessionsRequest: GetJoinedSessionsRequest): Promise<GetJoinedSessionsResponse> {
+async function GetJoinedClientIds(getJoinedSessionsRequest: GetJoinedClientIdsRequest): Promise<GetJoinedClientIdsResponse> {
     return new Promise((resolve, reject) => {
-        grpcRoomClient.getJoinedSessions(getJoinedSessionsRequest, (error, response: GetJoinedSessionsResponse) => {
+        grpcRoomClient.getJoinedClientIds(getJoinedSessionsRequest, (error, response: GetJoinedClientIdsResponse) => {
             if (error) {
                 reject(error);
             } else {

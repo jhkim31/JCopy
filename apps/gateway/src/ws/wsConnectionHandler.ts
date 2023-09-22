@@ -7,8 +7,8 @@ import logger from "@config/logger";
 export default async function wsConnectionHandler(ws: WebSocket) {
     const clientId = uuid();
     logger.info(`ws ${clientId}이 연결되었습니다.`);
-
     wsClients[clientId] = ws;
+    ws.send(JSON.stringify({type: "init", clientId: clientId}));
 
     setInterval(() => {
         ws.ping();        

@@ -3,7 +3,7 @@ dotenv.config();
 
 import assert from "assert";
 import { kafkaConsumer } from "@config/kafka";
-// import eachMessageHandler from "@kafka/eachMessageHandler";
+import eachMessageHandler from "@kafka/eachMessageHandler";
 import logger from "@config/logger";
 import Express from "@config/express";
 import { Request } from "express";
@@ -12,14 +12,27 @@ import {v4 as uuid} from "uuid";
 import WebSocket from "ws";
 import wsConnectionHandler from "./ws/wsConnectionHandler";
 import ErrorHandler from "./express/handler/ErrorHandler";
-
 import { wsClients } from "@config/ws";
+import * as handler from "@express/handler";
+
 const EXPRESS_PORT = process.env.EXPRESS_PORT as string;
 
 assert.strictEqual(typeof EXPRESS_PORT, "string", "EXPRESS_PORT 가 선언되지 않았습니다.")
-// kafkaConsumer.run({
-//     eachMessage: eachMessageHandler
-// })
+kafkaConsumer.run({
+    eachMessage: eachMessageHandler
+})
+
+Express.get('/', handler.ELBHandler);
+Express.get('/home', handler.pageHandler);
+Express.get('/joinroom', handler.pageHandler);
+Express.get('/room/*', handler.pageHandler);
+Express.get('/text', handler.getTextHandler);
+Express.get('/uploadable', handler.getUploadableHandler);
+Express.get("*", handler.defaultHandler);
+
+Express.post("/room", handler.postRoomHandler);
+Express.post('/joinroom', handler.postJoinRoomHandler);
+
 
 
 Express.use(ErrorHandler);
