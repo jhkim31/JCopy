@@ -90,7 +90,7 @@ export default async function upload_file(message: KafkaMessage) {
     const updateFilesKafkaMessage: IUpdateFiles = {
         id: uuid(),
         roomId: roomId,
-        clientSession: updatedRoom.sessions,
+        clientId: updatedRoom.clientIds,
         fileIds: updatedRoom.fileIds,
         leftStorage: updatedRoom.leftStorage
     }
@@ -103,9 +103,9 @@ export default async function upload_file(message: KafkaMessage) {
     await kafkaProducer
         .send(kafkaRecord)
         .then(d => {
-            logger.info(`kafka producer success send\n${JSON.stringify(d, null, 4)}`);
+            logger.debug(`kafka producer success send\n${JSON.stringify(d, null, 4)}`);
         })
         .catch(e => {
-            logger.info(`kafka producer fail send\n${JSON.stringify(e, null, 4)}`);
+            logger.error(`kafka producer fail send\n${JSON.stringify(e, null, 4)}`);
         })
 }

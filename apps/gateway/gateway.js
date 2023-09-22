@@ -2,8 +2,6 @@ const logger = require("./logger");
 const YAML = require("yaml");
 const fs = require("fs");
 const express = require("express");
-const session = require("express-session");
-const RedisStore = require("connect-redis")(session);
 const {createClient} = require("redis");
 const wsModule = require("ws");
 const {v4: uuidv4} = require("uuid");
@@ -16,6 +14,12 @@ const multerS3 = require("multer-s3");
 const aws = require("aws-sdk");
 aws.config.loadFromPath("./s3.json");
 
+const wsClients = {};
+
+setInterval(() => {
+    console.log(Object.keys(wsClients));
+}, 3000)
+
 const s3 = new aws.S3();
 const upload = multer({
     storage: multerS3({
@@ -27,32 +31,6 @@ const upload = multer({
         },
     }),
 });
-
-// const aws = require("aws-sdk");
-// aws.config.loadFromPath("./s3.json");
-
-// const s3 = new aws.S3();
-// params = {
-//     Bucket: "jcopy-storage"
-// }
-// s3.listObjects(params, function (err, data) {
-//     if (err) throw err;
-//     console.log(data.Contents);
-//     for (const item of data.Contents) {
-//         s3.deleteObject(
-//             {
-//                 Bucket: "jcopy-storage", // 사용자 버켓 이름
-//                 Key: item.Key,
-//             },
-//             (err2, data2) => {
-//                 if (err2) {
-//                     throw err2;
-//                 }
-//                 console.log("s3 deleteObject ", data2);
-//             }
-//         );
-//     }
-// });
 
 let config = null;
 if (process.env.NODE_ENV == "develop") {
@@ -72,7 +50,7 @@ if (process.env.NODE_ENV == "production") {
 logger.info(`[1-001-01] config\n${YAML.stringify(config)}`);
 
 const kafka = new Kafka({
-    brokers: config.kafka.brokers,
+    brokers: ["192.168.150.47:29092"],
     logLevel: logLevel.ERROR,
 });
 const PROTO_FILE = config.grpc.proto.path;
@@ -120,48 +98,31 @@ try {
     logger.error(`[1-004-11] grpc connect error : \n${e}`);
 }
 
-Express.use(
-    session({
-        store: new RedisStore({client: redisClient}),
-        secret: uuidv4(),
-        resave: false,
-        saveUninitialized: true,
-        cookie: {
-            maxAge: 1000 * 60 * 60, // 60분
-        },
-    })
-);
 
 Express.get("/", (req, res) => {
     console.log("get /");
     if (req.headers["user-agent"].includes("ELB-HealthChecker")) {
         res.send("health check");
-        req.session.destroy();
     } else {
-        console.log("redirect");
-        logger.info(`[1-401-00] ${req.method} ${req.originalUrl} ${req.socket.remoteAddress}  ${JSON.stringify(req.params)} | session-id : ${req.session.id}`);
+        console.log("redirect");        
         res.redirect("/home");
     }
 });
 
 Express.get("/home", (req, res) => {
-	console.log("/home");
-    logger.info(`[1-402-00] ${req.method} ${req.originalUrl} ${req.socket.remoteAddress}  ${JSON.stringify(req.params)} | session-id : ${req.session.id}`);
+	console.log("/home");    
     res.sendFile("build/index2.html", {root: "."});
 });
 
-Express.get("/joinroom", (req, res) => {
-    logger.info(`[1-403-00] ${req.method} ${req.originalUrl} ${req.socket.remoteAddress}  ${JSON.stringify(req.params)} | session-id : ${req.session.id}`);
+Express.get("/joinroom", (req, res) => {    
     res.sendFile("build/index2.html", {root: "."});
 });
 
 Express.get("/room/*", (req, res) => {
-    logger.info(`[1-404-00] ${req.method} ${req.originalUrl} ${req.socket.remoteAddress}  ${JSON.stringify(req.params)} | session-id : ${req.session.id}`);
     res.sendFile("build/index2.html", {root: "."});
 });
 
 Express.get("/text", (req, res) => {
-    logger.info(`[1-405-00] ${req.method} ${req.originalUrl} ${req.socket.remoteAddress}  ${JSON.stringify(req.params)} | session-id : ${req.session.id}`);
     const GetTextRequest = {
         id: uuidv4(),
         textId: req.params.id,
@@ -210,16 +171,16 @@ Express.get("/uploadable", (req, res) => {
 });
 
 Express.get("*", function (req, res) {
-    logger.info(`[1-499-00] ${req.method} ${req.originalUrl} ${req.socket.remoteAddress}  ${JSON.stringify(req.params)} | session-id : ${req.session.id}`);
     res.status(404).redirect("/home");
 });
 
 Express.post("/room", (req, res) => {
-    logger.info(`[1-501-00] ${req.method} ${req.originalUrl} ${req.socket.remoteAddress}  ${JSON.stringify(req.params)} | session-id : ${req.session.id}`);
+    const clientId = req.query.clientId;
+    logger.info(`room : ${clientId}`);
 
     const CreateRoomRequest = {
         id: uuidv4(),
-        clientSession: req.session.id,
+        clientId: clientId,
         expireTime: new Date(new Date().getTime() + 1000 * 60 * 5).getTime(),
     };
 
@@ -255,14 +216,12 @@ Express.post("/room", (req, res) => {
 });
 
 Express.post("/joinroom", (req, res) => {
-    const session = req.session;
-    logger.info(
-        `[1-502-00] ip : ${req.socket.remoteAddress} | session-id : ${session.id} ${req.method} ${req.originalUrl} param : ${JSON.stringify(req.params)}`
-    );
+    const clientId = req.query.clientId;
+    logger.info(`join room : ${clientId}`);
 
     const JoinRoomRequest = {
         id: uuidv4(),
-        clientSession: req.session.id,
+        clientId: clientId,
         roomId: req.query.roomId,
     };
 
@@ -292,7 +251,6 @@ Express.post("/joinroom", (req, res) => {
                             },
                             files: GetFilesResponse.fileNames,
                             error: 0,
-                            session: req.session.id,
                             leftStorage: JoinRoomResponse.leftStorage,
                             expireTime: JoinRoomResponse.expireTime,
                         };
@@ -405,17 +363,14 @@ const WSServer = new wsModule.Server({
 });
 
 WSServer.on("connection", async (ws, request) => {
-    for (const header of request.headers.cookie.split(";")) {
-        if (header.includes("connect.sid")) {
-            const session = header.replace("connect.sid=s%3A", "").split(".")[0].trim();
-            ws.id = session;
-            logger.info(`[1-601-00] WebSocket [${session}] connected!!`);
-            break;
-        }
-    }
+    const clientId = uuidv4();
+    ws.send(JSON.stringify({type: "init", clientId: clientId}));    
+    logger.warn(clientId);
+
+    wsClients[clientId] = ws;
 
     ws.on("message", async (msg) => {
-        logger.debug(`[1-602-00] WS [${ws.id}] Recv msg : ${msg}`);
+        logger.info(`get message : ${clientId}`);        
         const wsMsg = JSON.parse(msg);
         switch (wsMsg.type) {
             case "heartbeat":
@@ -425,12 +380,13 @@ WSServer.on("connection", async (ws, request) => {
                 */
                 break;
             case "text":
+                console.log(`text update ${clientId}`);
                 const kafkaMsg = {
                     id: uuidv4(),
                     roomId: wsMsg.roomId,
                     textId: wsMsg.textId,
                     textValue: wsMsg.textValue,
-                    clientSession: ws.id,
+                    clientId: clientId,
                 };
                 const kafkaData = {topic: "change_text", messages: [{value: JSON.stringify(kafkaMsg)}]};
                 logger.debug(`  [1-201-00] Produce change_text ${JSON.stringify(kafkaMsg)}`);
@@ -452,8 +408,8 @@ WSServer.on("connection", async (ws, request) => {
     });
 
     ws.on("close", (code, reason) => {
-        console.log(`close ws : ${ws.id}`);
-        console.log(code);
+        delete wsClients[clientId];        
+        console.log(`close ws ${clientId}`);
     });
 });
 
@@ -473,63 +429,63 @@ async function kafkaConsumerListener() {
             }
 
             if (msg != {}) {
-                let GetJoinedSessionsRequest = {};
+                let GetJoinedClientIdsRequest = {};
                 switch (topic) {
                     case "text_changed":
-                        GetJoinedSessionsRequest = {
+                        GetJoinedClientIdsRequest = {
                             id: uuidv4(),
                             roomId: msg.roomId,
-                            clientSession: msg.clientSession,
+                            clientId: msg.clientId,
                         };
-                        logger.debug(`  [1-106-00] gRPC Send GetJoinedSessionsRequest : ${JSON.stringify(GetJoinedSessionsRequest)}`);
-                        gRPCRoomServiceClient.GetJoinedSessions(GetJoinedSessionsRequest, (error, GetJoinedSessionsResponse) => {
+                        logger.debug(`  [1-106-00] gRPC Send GetJoinedClientIdsRequest : ${JSON.stringify(GetJoinedClientIdsRequest)}`);
+                        gRPCRoomServiceClient.GetJoinedClientIds(GetJoinedClientIdsRequest, (error, GetJoinedClientIdsResponse) => {
                             if (error) {
-                                logger.error(`  [1-106-51] gRPC GetJoinedSessions Error RPC_ID : ${GetJoinedSessionsRequest.id} | ${error}`);
+                                logger.error(`  [1-106-51] gRPC GetJoinedClientIds Error RPC_ID : ${GetJoinedClientIdsRequest.id} | ${error}`);
                             } else {
-                                logger.debug(`  [1-106-01] gRPC Recv GetJoinedSessionsResponse : ${JSON.stringify(GetJoinedSessionsResponse)}`);
-                                for (const sessionId of GetJoinedSessionsResponse.clientSessions) {
-                                    if (msg.clientSession != sessionId) {
-                                        WSServer.clients.forEach(function each(client) {
-                                            if (client.readyState == wsModule.OPEN && client.id == sessionId) {
-                                                logger.debug(`    [1-603-00] WS [${client.id}] Send  msg : ${msg.textValue}`);
-                                                const wsMsg = {
-                                                    type: "text",
-                                                    msg: msg.textValue,
-                                                };
-                                                client.send(JSON.stringify(wsMsg));
-                                            }
-                                        });
+                                logger.debug(`  [1-106-01] gRPC Recv GetJoinedClientIdsResponse : ${JSON.stringify(GetJoinedClientIdsResponse)}`);
+                                for (const clientId of GetJoinedClientIdsResponse.clientIds) {
+                                    if (msg.clientId != clientId) {         
+                                        console.log("receive session id : ", clientId);
+                                        const wsClient = wsClients[clientId];
+                                        const wsMsg = {
+                                            type: "text",
+                                            msg: msg.textValue,
+                                        };
+                                        if (wsClient){
+                                            wsClient.send(JSON.stringify(wsMsg));
+                                        }
                                     }
                                 }
                             }
                         });
                         break;
                     case "UpdateFiles":
-                        GetJoinedSessionsRequest = {
+                        GetJoinedClientIdsRequest = {
                             id: uuidv4(),
                             roomId: msg.roomId,
-                            clientSession: msg.clientSession,
+                            clientId: msg.clientId,
                         };
-                        logger.debug(`UpdateFiles  [1-106-00] gRPC Send GetJoinedSessionsRequest : ${JSON.stringify(GetJoinedSessionsRequest)}`);
-                        gRPCRoomServiceClient.GetJoinedSessions(GetJoinedSessionsRequest, (error, GetJoinedSessionsResponse) => {
+                        logger.debug(`UpdateFiles  [1-106-00] gRPC Send GetJoinedClientIdsRequest : ${JSON.stringify(GetJoinedClientIdsRequest)}`);
+                        gRPCRoomServiceClient.GetJoinedClientIds(GetJoinedClientIdsRequest, (error, GetJoinedClientIdsResponse) => {
                             if (error) {
-                                logger.error(`UpdateFiles  [1-106-51] gRPC GetJoinedSessions Error RPC_ID : ${GetJoinedSessionsRequest.id} | ${error}`);
+                                logger.error(`UpdateFiles  [1-106-51] gRPC GetJoinedClientIds Error RPC_ID : ${GetJoinedClientIdsRequest.id} | ${error}`);
                             } else {
-                                logger.debug(`UpdateFiles  [1-106-01] gRPC Recv GetJoinedSessionsResponse : ${JSON.stringify(GetJoinedSessionsResponse)}`);
-                                for (const sessionId of GetJoinedSessionsResponse.clientSessions) {
-                                    logger.debug(`UpdateFiles ${sessionId}`);
+                                logger.debug(`UpdateFiles  [1-106-01] gRPC Recv GetJoinedClientIdsResponse : ${JSON.stringify(GetJoinedClientIdsResponse)}`);
+                                for (const clientId of GetJoinedClientIdsResponse.clientIds) {
+                                    logger.debug(`UpdateFiles ${clientId}`);
 
-                                    WSServer.clients.forEach(function each(client) {
-                                        if (client.readyState == wsModule.OPEN && client.id == sessionId) {
-                                            const wsMsg = {
-                                                type: "file",
-                                                fileIds: msg.fileIds,
-                                                leftStorage: GetJoinedSessionsResponse.leftStorage,
-                                            };
-                                            logger.debug(`UpdateFiles send : ${sessionId}`);
-                                            client.send(JSON.stringify(wsMsg));
-                                        }
-                                    });
+
+                                    // WSServer.clients.forEach(function each(client) {
+                                    //     if (client.readyState == wsModule.OPEN && client.id == clientId) {
+                                    //         const wsMsg = {
+                                    //             type: "file",
+                                    //             fileIds: msg.fileIds,
+                                    //             leftStorage: GetJoinedClientIdsResponse.leftStorage,
+                                    //         };
+                                    //         logger.debug(`UpdateFiles send : ${clientId}`);
+                                    //         client.send(JSON.stringify(wsMsg));
+                                    //     }
+                                    // });
                                 }
                             }
                         });

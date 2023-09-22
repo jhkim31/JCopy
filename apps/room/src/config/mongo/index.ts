@@ -16,6 +16,7 @@ assert.strictEqual(typeof MONGODB_DBNAME, "string", `MONGODB_DB4 가 선언되�
 
 const url = `mongodb://${MONGODB_USER}:${MONGODB_PASSWORD}@${MONGODB_HOST}:${MONGODB_PORT}`;
 
+mongoose.set("strictQuery", true);
 mongoose
     .connect(url, { dbName: MONGODB_DBNAME })
     .then(() => {
@@ -24,11 +25,11 @@ mongoose
     .catch(e => {
         logger.error(`mongodb init connect error\n${e}`);
         assert.fail("mongodb init connect error");
-    })
+    });
 
 const RoomSchema = new mongoose.Schema({
     roomId: {type: String, required: true},
-    sessions: {type: [String], required: true},
+    clientIds: {type: [String], required: true},
     textId: {type: String, required: true},
     leftStorage: {type: Number, required: true},
     fileIds: {type: [String], required: true},

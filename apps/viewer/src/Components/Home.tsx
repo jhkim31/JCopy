@@ -22,10 +22,11 @@ const HomeBtn = styled.div`
     }
 `;
 
-function Home() {
+function Home(props: {clientId: string;}) {
+    const clientId = props.clientId;
     const navigate = useNavigate();
     async function createRoom() {
-        fetch("/room", {method: "POST"})
+        fetch(`/room?clientId=${clientId}`, {method: "POST"})
             .then((d) => d.json())
             .then((d) => {
                 const roomInfo = d;

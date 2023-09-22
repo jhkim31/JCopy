@@ -1,5 +1,5 @@
-import {BrowserRouter, Routes, Route, useNavigate} from "react-router-dom";
-import {useState, useEffect} from "react";
+import { BrowserRouter, Routes, Route, useNavigate } from "react-router-dom";
+import { useState, useEffect } from "react";
 import styled from "styled-components";
 import RoomComponent from "./Components/RoomComponent";
 import JoinRoom from "./Components/JoinRoom";
@@ -23,28 +23,45 @@ const MainPage = styled.div`
 
 function App() {
     const host = window.location.host;
-    let ws;
+    const [ws, setWs] = useState<WebSocket | null>(null);
+    const [clientId, setClientId] = useState("");
 
-    if (window.location.protocol == "https:"){
-        ws = new WebSocket(`wss://${window.location.host}`);
-    } else {
-        ws = new WebSocket(`ws://${window.location.host}`);
-    }
+    useEffect(() => {
+        let newWs;
+        if (window.location.protocol == "https:") {
+            newWs = new WebSocket(`wss://${window.location.host}`);
+        } else {
+            newWs = new WebSocket(`ws://${window.location.host}`);
+            newWs.onopen = (e) => {
+                console.log("open");
+            }
 
+            newWs.onmessage = (e) => {
+                const msg = JSON.parse(e.data);
+                console.log(msg.clientId);
+                if (msg.type == "init") {
+                    setClientId(msg.clientId);
+                }
+            }
+        }
+        setWs(newWs);
+    }, [])
 
     return (
         <Wrapper>
-            <Header/>
-            <MainPage>
+
+            <Header />
+            {clientId != "" && <MainPage>
                 <BrowserRouter>
                     <Routes>
-                        <Route path="/home" element={<Home />} />
-                        <Route path="/joinroom" element={<JoinRoom />} />
-                        <Route path="/room/*" element={<RoomComponent ws={ws} />} />
+                        <Route path="/home" element={<Home clientId={clientId} />} />
+                        <Route path="/joinroom" element={<JoinRoom clientId={clientId} />} />
+                        <Route path="/room/*" element={<RoomComponent ws={ws} clientId={clientId} />} />
                     </Routes>
                 </BrowserRouter>
-            </MainPage>
-            <Footer/>
+            </MainPage>}
+
+            <Footer />
         </Wrapper>
     );
 }

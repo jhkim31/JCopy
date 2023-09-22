@@ -15,7 +15,9 @@ const TextField = styled.input`
     font-size: 1.3em;
 `
 
-function JoinRoom() {
+function JoinRoom(props: {clientId: string;}) {
+    const clientId = props.clientId;
+    console.log(`JoinRoom : ${clientId}`);
     const navigate = useNavigate();
     const [roomId, setRoomId] = useState("");
 
@@ -25,7 +27,7 @@ function JoinRoom() {
 
     async function enterPress(e: React.KeyboardEvent) {
         if (e.key == "Enter") {
-            fetch(`/joinroom?roomId=${roomId}`, {method: "POST"})
+            fetch(`/joinroom?roomId=${roomId}&clientId=${clientId}`, {method: "POST"})
                 .then((d) => d.json())
                 .then((d) => {
                     if (d.error == 0) {

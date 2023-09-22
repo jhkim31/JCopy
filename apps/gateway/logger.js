@@ -98,7 +98,7 @@ const logger = winston.createLogger({
 
 logger.add(
     new winston.transports.Console({
-        level: "debug",
+        level: "info",
         format: format.combine(
             format.label({label: "Gateway"}),
             format.timestamp({

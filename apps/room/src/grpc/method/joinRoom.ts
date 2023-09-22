@@ -7,17 +7,17 @@ export default async function joinRoom(call: ServerUnaryCall<JoinRoomRequest, Jo
     try {
         const id = call.request.getId();
         const roomId = call.request.getRoomid();
-        const clientSession = call.request.getClientsession();
+        const clientId = call.request.getClientid();
 
         logger.debug(`gRPC Room.JoinRoom receive data\n${JSON.stringify(call.request.toObject(), null, 4)}`);
 
         await Room
-            .updateOne({ roomId: roomId }, { $addToSet: { sessions: clientSession } })
+            .updateOne({ roomId: roomId }, { $addToSet: { clientIds: clientId } })
             .then(d => {
                 if (d.modifiedCount == 0) {
                     logger.warn(`grpc Room.JoinRoom mongo room not found : ${roomId}`);
                 } else {
-                    logger.info(`grpc Room.JoinRoom mongo add session to room. \nroomId : ${roomId}\nsession : ${clientSession}`);
+                    logger.info(`grpc Room.JoinRoom mongo add clientId to room. \nroomId : ${roomId}\nclientId : ${clientId}`);
                 }
             })
             .catch(e => {

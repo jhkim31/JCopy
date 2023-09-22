@@ -14,11 +14,11 @@ const TextChangedSchema: JSONSchemaType<ITextChanged> = {
         textValue : {
             type : "string"
         },
-        clientSession : {
+        clientId : {
             "type" : "string"
         }
     },
-    required: ["roomId", "textId", "textValue", "clientSession"],
+    required: ["roomId", "textId", "textValue", "clientId"],
     additionalProperties: false
 }
 

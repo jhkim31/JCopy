@@ -10,7 +10,7 @@ import * as jcopy_pb from "./jcopy_pb";
 interface IRoomService extends grpc.ServiceDefinition<grpc.UntypedServiceImplementation> {
     createRoom: IRoomService_ICreateRoom;
     joinRoom: IRoomService_IJoinRoom;
-    getJoinedSessions: IRoomService_IGetJoinedSessions;
+    getJoinedClientIds: IRoomService_IGetJoinedClientIds;
     getLeftStorage: IRoomService_IGetLeftStorage;
 }
 
@@ -32,14 +32,14 @@ interface IRoomService_IJoinRoom extends grpc.MethodDefinition<jcopy_pb.JoinRoom
     responseSerialize: grpc.serialize<jcopy_pb.JoinRoomResponse>;
     responseDeserialize: grpc.deserialize<jcopy_pb.JoinRoomResponse>;
 }
-interface IRoomService_IGetJoinedSessions extends grpc.MethodDefinition<jcopy_pb.GetJoinedSessionsRequest, jcopy_pb.GetJoinedSessionsResponse> {
-    path: "/jcopy.Room/GetJoinedSessions";
+interface IRoomService_IGetJoinedClientIds extends grpc.MethodDefinition<jcopy_pb.GetJoinedClientIdsRequest, jcopy_pb.GetJoinedClientIdsResponse> {
+    path: "/jcopy.Room/GetJoinedClientIds";
     requestStream: false;
     responseStream: false;
-    requestSerialize: grpc.serialize<jcopy_pb.GetJoinedSessionsRequest>;
-    requestDeserialize: grpc.deserialize<jcopy_pb.GetJoinedSessionsRequest>;
-    responseSerialize: grpc.serialize<jcopy_pb.GetJoinedSessionsResponse>;
-    responseDeserialize: grpc.deserialize<jcopy_pb.GetJoinedSessionsResponse>;
+    requestSerialize: grpc.serialize<jcopy_pb.GetJoinedClientIdsRequest>;
+    requestDeserialize: grpc.deserialize<jcopy_pb.GetJoinedClientIdsRequest>;
+    responseSerialize: grpc.serialize<jcopy_pb.GetJoinedClientIdsResponse>;
+    responseDeserialize: grpc.deserialize<jcopy_pb.GetJoinedClientIdsResponse>;
 }
 interface IRoomService_IGetLeftStorage extends grpc.MethodDefinition<jcopy_pb.GetLeftStorageRequest, jcopy_pb.GetLeftStorageResponse> {
     path: "/jcopy.Room/GetLeftStorage";
@@ -56,7 +56,7 @@ export const RoomService: IRoomService;
 export interface IRoomServer extends grpc.UntypedServiceImplementation {
     createRoom: grpc.handleUnaryCall<jcopy_pb.CreateRoomRequest, jcopy_pb.CreateRoomResponse>;
     joinRoom: grpc.handleUnaryCall<jcopy_pb.JoinRoomRequest, jcopy_pb.JoinRoomResponse>;
-    getJoinedSessions: grpc.handleUnaryCall<jcopy_pb.GetJoinedSessionsRequest, jcopy_pb.GetJoinedSessionsResponse>;
+    getJoinedClientIds: grpc.handleUnaryCall<jcopy_pb.GetJoinedClientIdsRequest, jcopy_pb.GetJoinedClientIdsResponse>;
     getLeftStorage: grpc.handleUnaryCall<jcopy_pb.GetLeftStorageRequest, jcopy_pb.GetLeftStorageResponse>;
 }
 
@@ -67,9 +67,9 @@ export interface IRoomClient {
     joinRoom(request: jcopy_pb.JoinRoomRequest, callback: (error: grpc.ServiceError | null, response: jcopy_pb.JoinRoomResponse) => void): grpc.ClientUnaryCall;
     joinRoom(request: jcopy_pb.JoinRoomRequest, metadata: grpc.Metadata, callback: (error: grpc.ServiceError | null, response: jcopy_pb.JoinRoomResponse) => void): grpc.ClientUnaryCall;
     joinRoom(request: jcopy_pb.JoinRoomRequest, metadata: grpc.Metadata, options: Partial<grpc.CallOptions>, callback: (error: grpc.ServiceError | null, response: jcopy_pb.JoinRoomResponse) => void): grpc.ClientUnaryCall;
-    getJoinedSessions(request: jcopy_pb.GetJoinedSessionsRequest, callback: (error: grpc.ServiceError | null, response: jcopy_pb.GetJoinedSessionsResponse) => void): grpc.ClientUnaryCall;
-    getJoinedSessions(request: jcopy_pb.GetJoinedSessionsRequest, metadata: grpc.Metadata, callback: (error: grpc.ServiceError | null, response: jcopy_pb.GetJoinedSessionsResponse) => void): grpc.ClientUnaryCall;
-    getJoinedSessions(request: jcopy_pb.GetJoinedSessionsRequest, metadata: grpc.Metadata, options: Partial<grpc.CallOptions>, callback: (error: grpc.ServiceError | null, response: jcopy_pb.GetJoinedSessionsResponse) => void): grpc.ClientUnaryCall;
+    getJoinedClientIds(request: jcopy_pb.GetJoinedClientIdsRequest, callback: (error: grpc.ServiceError | null, response: jcopy_pb.GetJoinedClientIdsResponse) => void): grpc.ClientUnaryCall;
+    getJoinedClientIds(request: jcopy_pb.GetJoinedClientIdsRequest, metadata: grpc.Metadata, callback: (error: grpc.ServiceError | null, response: jcopy_pb.GetJoinedClientIdsResponse) => void): grpc.ClientUnaryCall;
+    getJoinedClientIds(request: jcopy_pb.GetJoinedClientIdsRequest, metadata: grpc.Metadata, options: Partial<grpc.CallOptions>, callback: (error: grpc.ServiceError | null, response: jcopy_pb.GetJoinedClientIdsResponse) => void): grpc.ClientUnaryCall;
     getLeftStorage(request: jcopy_pb.GetLeftStorageRequest, callback: (error: grpc.ServiceError | null, response: jcopy_pb.GetLeftStorageResponse) => void): grpc.ClientUnaryCall;
     getLeftStorage(request: jcopy_pb.GetLeftStorageRequest, metadata: grpc.Metadata, callback: (error: grpc.ServiceError | null, response: jcopy_pb.GetLeftStorageResponse) => void): grpc.ClientUnaryCall;
     getLeftStorage(request: jcopy_pb.GetLeftStorageRequest, metadata: grpc.Metadata, options: Partial<grpc.CallOptions>, callback: (error: grpc.ServiceError | null, response: jcopy_pb.GetLeftStorageResponse) => void): grpc.ClientUnaryCall;
@@ -83,9 +83,9 @@ export class RoomClient extends grpc.Client implements IRoomClient {
     public joinRoom(request: jcopy_pb.JoinRoomRequest, callback: (error: grpc.ServiceError | null, response: jcopy_pb.JoinRoomResponse) => void): grpc.ClientUnaryCall;
     public joinRoom(request: jcopy_pb.JoinRoomRequest, metadata: grpc.Metadata, callback: (error: grpc.ServiceError | null, response: jcopy_pb.JoinRoomResponse) => void): grpc.ClientUnaryCall;
     public joinRoom(request: jcopy_pb.JoinRoomRequest, metadata: grpc.Metadata, options: Partial<grpc.CallOptions>, callback: (error: grpc.ServiceError | null, response: jcopy_pb.JoinRoomResponse) => void): grpc.ClientUnaryCall;
-    public getJoinedSessions(request: jcopy_pb.GetJoinedSessionsRequest, callback: (error: grpc.ServiceError | null, response: jcopy_pb.GetJoinedSessionsResponse) => void): grpc.ClientUnaryCall;
-    public getJoinedSessions(request: jcopy_pb.GetJoinedSessionsRequest, metadata: grpc.Metadata, callback: (error: grpc.ServiceError | null, response: jcopy_pb.GetJoinedSessionsResponse) => void): grpc.ClientUnaryCall;
-    public getJoinedSessions(request: jcopy_pb.GetJoinedSessionsRequest, metadata: grpc.Metadata, options: Partial<grpc.CallOptions>, callback: (error: grpc.ServiceError | null, response: jcopy_pb.GetJoinedSessionsResponse) => void): grpc.ClientUnaryCall;
+    public getJoinedClientIds(request: jcopy_pb.GetJoinedClientIdsRequest, callback: (error: grpc.ServiceError | null, response: jcopy_pb.GetJoinedClientIdsResponse) => void): grpc.ClientUnaryCall;
+    public getJoinedClientIds(request: jcopy_pb.GetJoinedClientIdsRequest, metadata: grpc.Metadata, callback: (error: grpc.ServiceError | null, response: jcopy_pb.GetJoinedClientIdsResponse) => void): grpc.ClientUnaryCall;
+    public getJoinedClientIds(request: jcopy_pb.GetJoinedClientIdsRequest, metadata: grpc.Metadata, options: Partial<grpc.CallOptions>, callback: (error: grpc.ServiceError | null, response: jcopy_pb.GetJoinedClientIdsResponse) => void): grpc.ClientUnaryCall;
     public getLeftStorage(request: jcopy_pb.GetLeftStorageRequest, callback: (error: grpc.ServiceError | null, response: jcopy_pb.GetLeftStorageResponse) => void): grpc.ClientUnaryCall;
     public getLeftStorage(request: jcopy_pb.GetLeftStorageRequest, metadata: grpc.Metadata, callback: (error: grpc.ServiceError | null, response: jcopy_pb.GetLeftStorageResponse) => void): grpc.ClientUnaryCall;
     public getLeftStorage(request: jcopy_pb.GetLeftStorageRequest, metadata: grpc.Metadata, options: Partial<grpc.CallOptions>, callback: (error: grpc.ServiceError | null, response: jcopy_pb.GetLeftStorageResponse) => void): grpc.ClientUnaryCall;

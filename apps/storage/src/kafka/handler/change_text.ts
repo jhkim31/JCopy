@@ -39,7 +39,7 @@ export default async function change_text(message: KafkaMessage) {
         roomId: changeTextJsonMessage.roomId,
         textId: changeTextJsonMessage.textId,
         textValue: changeTextJsonMessage.textValue,
-        clientSession: changeTextJsonMessage.clientSession
+        clientId: changeTextJsonMessage.clientId
     }
 
     const kafkaRecord = {
@@ -52,9 +52,9 @@ export default async function change_text(message: KafkaMessage) {
     await kafkaProducer
         .send(kafkaRecord)
         .then(d => {
-            logger.info(`kafka producer success send\n${JSON.stringify(d, null, 4)}`);
+            logger.debug(`kafka producer success send\n${JSON.stringify(d, null, 4)}`);
         })
         .catch(e => {
-            logger.info(`kafka producer fail send\n${JSON.stringify(e, null, 4)}`);
+            logger.error(`kafka producer fail send\n${JSON.stringify(e, null, 4)}`);
         })
 }

@@ -3,5 +3,5 @@ export default interface IChangeText {
     roomId: string;
     textId: string;
     textValue: string;
-    clientSession: string;
+    clientId: string;
 }

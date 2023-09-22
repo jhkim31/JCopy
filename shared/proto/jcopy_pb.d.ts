@@ -26,8 +26,8 @@ export namespace Empty {
 export class CreateRoomRequest extends jspb.Message { 
     getId(): string;
     setId(value: string): CreateRoomRequest;
-    getClientsession(): string;
-    setClientsession(value: string): CreateRoomRequest;
+    getClientid(): string;
+    setClientid(value: string): CreateRoomRequest;
     getExpiretime(): number;
     setExpiretime(value: number): CreateRoomRequest;
     getNum(): number;
@@ -46,7 +46,7 @@ export class CreateRoomRequest extends jspb.Message {
 export namespace CreateRoomRequest {
     export type AsObject = {
         id: string,
-        clientsession: string,
+        clientid: string,
         expiretime: number,
         num: number,
     }
@@ -86,8 +86,8 @@ export namespace CreateRoomResponse {
 export class JoinRoomRequest extends jspb.Message { 
     getId(): string;
     setId(value: string): JoinRoomRequest;
-    getClientsession(): string;
-    setClientsession(value: string): JoinRoomRequest;
+    getClientid(): string;
+    setClientid(value: string): JoinRoomRequest;
     getRoomid(): string;
     setRoomid(value: string): JoinRoomRequest;
 
@@ -104,7 +104,7 @@ export class JoinRoomRequest extends jspb.Message {
 export namespace JoinRoomRequest {
     export type AsObject = {
         id: string,
-        clientsession: string,
+        clientid: string,
         roomid: string,
     }
 }
@@ -195,59 +195,59 @@ export namespace CreateTextResponse {
     }
 }
 
-export class GetJoinedSessionsRequest extends jspb.Message { 
+export class GetJoinedClientIdsRequest extends jspb.Message { 
     getId(): string;
-    setId(value: string): GetJoinedSessionsRequest;
+    setId(value: string): GetJoinedClientIdsRequest;
     getRoomid(): string;
-    setRoomid(value: string): GetJoinedSessionsRequest;
-    getClientsession(): string;
-    setClientsession(value: string): GetJoinedSessionsRequest;
+    setRoomid(value: string): GetJoinedClientIdsRequest;
+    getClientid(): string;
+    setClientid(value: string): GetJoinedClientIdsRequest;
 
     serializeBinary(): Uint8Array;
-    toObject(includeInstance?: boolean): GetJoinedSessionsRequest.AsObject;
-    static toObject(includeInstance: boolean, msg: GetJoinedSessionsRequest): GetJoinedSessionsRequest.AsObject;
+    toObject(includeInstance?: boolean): GetJoinedClientIdsRequest.AsObject;
+    static toObject(includeInstance: boolean, msg: GetJoinedClientIdsRequest): GetJoinedClientIdsRequest.AsObject;
     static extensions: {[key: number]: jspb.ExtensionFieldInfo<jspb.Message>};
     static extensionsBinary: {[key: number]: jspb.ExtensionFieldBinaryInfo<jspb.Message>};
-    static serializeBinaryToWriter(message: GetJoinedSessionsRequest, writer: jspb.BinaryWriter): void;
-    static deserializeBinary(bytes: Uint8Array): GetJoinedSessionsRequest;
-    static deserializeBinaryFromReader(message: GetJoinedSessionsRequest, reader: jspb.BinaryReader): GetJoinedSessionsRequest;
+    static serializeBinaryToWriter(message: GetJoinedClientIdsRequest, writer: jspb.BinaryWriter): void;
+    static deserializeBinary(bytes: Uint8Array): GetJoinedClientIdsRequest;
+    static deserializeBinaryFromReader(message: GetJoinedClientIdsRequest, reader: jspb.BinaryReader): GetJoinedClientIdsRequest;
 }
 
-export namespace GetJoinedSessionsRequest {
+export namespace GetJoinedClientIdsRequest {
     export type AsObject = {
         id: string,
         roomid: string,
-        clientsession: string,
+        clientid: string,
     }
 }
 
-export class GetJoinedSessionsResponse extends jspb.Message { 
+export class GetJoinedClientIdsResponse extends jspb.Message { 
     getId(): string;
-    setId(value: string): GetJoinedSessionsResponse;
+    setId(value: string): GetJoinedClientIdsResponse;
     getRoomid(): string;
-    setRoomid(value: string): GetJoinedSessionsResponse;
-    clearClientsessionsList(): void;
-    getClientsessionsList(): Array<string>;
-    setClientsessionsList(value: Array<string>): GetJoinedSessionsResponse;
-    addClientsessions(value: string, index?: number): string;
+    setRoomid(value: string): GetJoinedClientIdsResponse;
+    clearClientidsList(): void;
+    getClientidsList(): Array<string>;
+    setClientidsList(value: Array<string>): GetJoinedClientIdsResponse;
+    addClientids(value: string, index?: number): string;
     getLeftstorage(): number;
-    setLeftstorage(value: number): GetJoinedSessionsResponse;
+    setLeftstorage(value: number): GetJoinedClientIdsResponse;
 
     serializeBinary(): Uint8Array;
-    toObject(includeInstance?: boolean): GetJoinedSessionsResponse.AsObject;
-    static toObject(includeInstance: boolean, msg: GetJoinedSessionsResponse): GetJoinedSessionsResponse.AsObject;
+    toObject(includeInstance?: boolean): GetJoinedClientIdsResponse.AsObject;
+    static toObject(includeInstance: boolean, msg: GetJoinedClientIdsResponse): GetJoinedClientIdsResponse.AsObject;
     static extensions: {[key: number]: jspb.ExtensionFieldInfo<jspb.Message>};
     static extensionsBinary: {[key: number]: jspb.ExtensionFieldBinaryInfo<jspb.Message>};
-    static serializeBinaryToWriter(message: GetJoinedSessionsResponse, writer: jspb.BinaryWriter): void;
-    static deserializeBinary(bytes: Uint8Array): GetJoinedSessionsResponse;
-    static deserializeBinaryFromReader(message: GetJoinedSessionsResponse, reader: jspb.BinaryReader): GetJoinedSessionsResponse;
+    static serializeBinaryToWriter(message: GetJoinedClientIdsResponse, writer: jspb.BinaryWriter): void;
+    static deserializeBinary(bytes: Uint8Array): GetJoinedClientIdsResponse;
+    static deserializeBinaryFromReader(message: GetJoinedClientIdsResponse, reader: jspb.BinaryReader): GetJoinedClientIdsResponse;
 }
 
-export namespace GetJoinedSessionsResponse {
+export namespace GetJoinedClientIdsResponse {
     export type AsObject = {
         id: string,
         roomid: string,
-        clientsessionsList: Array<string>,
+        clientidsList: Array<string>,
         leftstorage: number,
     }
 }

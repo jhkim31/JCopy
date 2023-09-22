@@ -70,26 +70,26 @@ function deserialize_jcopy_GetFilesResponse(buffer_arg) {
   return jcopy_pb.GetFilesResponse.deserializeBinary(new Uint8Array(buffer_arg));
 }
 
-function serialize_jcopy_GetJoinedSessionsRequest(arg) {
-  if (!(arg instanceof jcopy_pb.GetJoinedSessionsRequest)) {
-    throw new Error('Expected argument of type jcopy.GetJoinedSessionsRequest');
+function serialize_jcopy_GetJoinedClientIdsRequest(arg) {
+  if (!(arg instanceof jcopy_pb.GetJoinedClientIdsRequest)) {
+    throw new Error('Expected argument of type jcopy.GetJoinedClientIdsRequest');
   }
   return Buffer.from(arg.serializeBinary());
 }
 
-function deserialize_jcopy_GetJoinedSessionsRequest(buffer_arg) {
-  return jcopy_pb.GetJoinedSessionsRequest.deserializeBinary(new Uint8Array(buffer_arg));
+function deserialize_jcopy_GetJoinedClientIdsRequest(buffer_arg) {
+  return jcopy_pb.GetJoinedClientIdsRequest.deserializeBinary(new Uint8Array(buffer_arg));
 }
 
-function serialize_jcopy_GetJoinedSessionsResponse(arg) {
-  if (!(arg instanceof jcopy_pb.GetJoinedSessionsResponse)) {
-    throw new Error('Expected argument of type jcopy.GetJoinedSessionsResponse');
+function serialize_jcopy_GetJoinedClientIdsResponse(arg) {
+  if (!(arg instanceof jcopy_pb.GetJoinedClientIdsResponse)) {
+    throw new Error('Expected argument of type jcopy.GetJoinedClientIdsResponse');
   }
   return Buffer.from(arg.serializeBinary());
 }
 
-function deserialize_jcopy_GetJoinedSessionsResponse(buffer_arg) {
-  return jcopy_pb.GetJoinedSessionsResponse.deserializeBinary(new Uint8Array(buffer_arg));
+function deserialize_jcopy_GetJoinedClientIdsResponse(buffer_arg) {
+  return jcopy_pb.GetJoinedClientIdsResponse.deserializeBinary(new Uint8Array(buffer_arg));
 }
 
 function serialize_jcopy_GetLeftStorageRequest(arg) {
@@ -182,16 +182,16 @@ var RoomService = exports.RoomService = {
     responseSerialize: serialize_jcopy_JoinRoomResponse,
     responseDeserialize: deserialize_jcopy_JoinRoomResponse,
   },
-  getJoinedSessions: {
-    path: '/jcopy.Room/GetJoinedSessions',
+  getJoinedClientIds: {
+    path: '/jcopy.Room/GetJoinedClientIds',
     requestStream: false,
     responseStream: false,
-    requestType: jcopy_pb.GetJoinedSessionsRequest,
-    responseType: jcopy_pb.GetJoinedSessionsResponse,
-    requestSerialize: serialize_jcopy_GetJoinedSessionsRequest,
-    requestDeserialize: deserialize_jcopy_GetJoinedSessionsRequest,
-    responseSerialize: serialize_jcopy_GetJoinedSessionsResponse,
-    responseDeserialize: deserialize_jcopy_GetJoinedSessionsResponse,
+    requestType: jcopy_pb.GetJoinedClientIdsRequest,
+    responseType: jcopy_pb.GetJoinedClientIdsResponse,
+    requestSerialize: serialize_jcopy_GetJoinedClientIdsRequest,
+    requestDeserialize: deserialize_jcopy_GetJoinedClientIdsRequest,
+    responseSerialize: serialize_jcopy_GetJoinedClientIdsResponse,
+    responseDeserialize: deserialize_jcopy_GetJoinedClientIdsResponse,
   },
   getLeftStorage: {
     path: '/jcopy.Room/GetLeftStorage',

@@ -5,11 +5,11 @@ import logger from "@config/logger";
 import { RetryOptions } from "kafkajs";
 
 const KAFKA_BROKERS = process.env.KAFKA_BROKERS as string;
-const STORAGE_KAFKA_GROUP_ID = process.env.STORAGE_KAFKA_GROUP_ID as string;
+const ROOM_KAFKA_GROUP_ID = process.env.ROOM_KAFKA_GROUP_ID as string;
 const topics = ["upload_file", "delete_file"];
 
 assert.strictEqual(typeof KAFKA_BROKERS, "string", `KAFKA_BROKERS 가 선언되지 않았습니다.`);
-assert.strictEqual(typeof STORAGE_KAFKA_GROUP_ID, "string", `STORAGE_KAFKA_GROUP_ID 가 선언되지 않았습니다.`);
+assert.strictEqual(typeof ROOM_KAFKA_GROUP_ID, "string", `ROOM_KAFKA_GROUP_ID 가 선언되지 않았습니다.`);
 
 const kafka = new Kafka({
     brokers: KAFKA_BROKERS!.split(","),
@@ -18,7 +18,7 @@ const kafka = new Kafka({
 });
 
 const kafkaProducer = kafka.producer();
-const kafkaConsumer = kafka.consumer({ groupId: STORAGE_KAFKA_GROUP_ID });
+const kafkaConsumer = kafka.consumer({ groupId: ROOM_KAFKA_GROUP_ID });
 
 
 kafkaProducer.connect()
@@ -41,25 +41,39 @@ kafkaConsumer.subscribe({ topics: topics, fromBeginning: false })
     .then(() => {
         logger.info(`kafka consumer subscribe topics ${topics}`);
     })
-    .catch(e => {        
+    .catch(e => {
         logger.error(`kafka consumer subscribe topic error\n${e}`);
         assert.fail('kafka consumer init connect error');
     })
 
-kafkaProducer.on(kafkaProducer.events.CONNECT, e => {
-    logger.info('kafka producer connect');    
+let producerConnectCount = 0;
+let producerDisconnectCount = 0;
+let consumerConnectCount = 0;
+let consumerDisconnectCount = 0;
+
+kafkaProducer.on(kafkaProducer.events.CONNECT, (e) => {
+    producerConnectCount++;
+    if (producerConnectCount > 1) {
+        logger.info(`kafka producer connect ${producerConnectCount}`);
+    }
 });
 
 kafkaProducer.on(kafkaProducer.events.DISCONNECT, e => {
-    logger.error('kafka producer disconnect');    
+    producerDisconnectCount++;
+    logger.error(`kafka producer disconnect ${producerDisconnectCount}`);
 });
 
 kafkaConsumer.on(kafkaConsumer.events.CONNECT, e => {
-    logger.info('kafka consumer connect');    
+    consumerConnectCount++;
+    if (consumerConnectCount > 1) {
+        logger.info(`kafka consumer connect ${consumerConnectCount}`);
+    }
 });
 
 kafkaConsumer.on(kafkaConsumer.events.DISCONNECT, e => {
-    logger.error('kafka consumer disconnect');
+    consumerDisconnectCount++;
+    logger.error(`kafka consumer disconnect ${consumerDisconnectCount}`);
 });
+
 
 export { kafkaProducer, kafkaConsumer };

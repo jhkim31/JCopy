@@ -6,7 +6,7 @@ message Empty {}
 
 message CreateRoomRequest {
     string id = 1;
-    string clientSession = 2;
+    string clientId = 2;
     int64 expireTime = 3;      // timestamp
     int64 num=4;
 }
@@ -20,7 +20,7 @@ message CreateRoomResponse {
 
 message JoinRoomRequest {
     string id = 1;
-    string clientSession = 2;
+    string clientId = 2;
     string roomId = 3;
 }
 
@@ -44,16 +44,16 @@ message CreateTextResponse {
     string textId = 2;
 }
 
-message GetJoinedSessionsRequest {
+message GetJoinedClientIdsRequest {
     string id = 1;
     string roomId = 2;
-    string clientSession = 3;
+    string clientId = 3;
 }
 
-message GetJoinedSessionsResponse {
+message GetJoinedClientIdsResponse {
     string id = 1;
     string roomId = 2;
-    repeated string clientSessions = 3;
+    repeated string clientIds = 3;
     int64 leftStorage = 4;
 }
 
@@ -95,7 +95,7 @@ message GetLeftStorageResponse {
 service Room {
     rpc CreateRoom (CreateRoomRequest) returns (CreateRoomResponse){};
     rpc JoinRoom (JoinRoomRequest) returns (JoinRoomResponse){};
-    rpc GetJoinedSessions (GetJoinedSessionsRequest) returns (GetJoinedSessionsResponse){};
+    rpc GetJoinedClientIds (GetJoinedClientIdsRequest) returns (GetJoinedClientIdsResponse){};
     rpc GetLeftStorage(GetLeftStorageRequest) returns (GetLeftStorageResponse){};
 }
 

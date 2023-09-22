@@ -1,4 +1,4 @@
-import { KafkaMessage } from "kafkajs";
+import { KafkaMessage, ProducerRecord } from "kafkajs";
 import ajv from "@config/ajv";
 import { v4 as uuid } from "uuid";
 import IDeleteFile from "jcopy-shared/interface/kafka/IDeleteFile";
@@ -57,12 +57,12 @@ export default async function delete_file(message: KafkaMessage) {
     const updateFilesKafkaMessage: IUpdateFiles = {
         id: uuid(),
         roomId: roomId,
-        clientSession: room.sessions,
+        clientId: room.clientIds,
         fileIds: room.fileIds,
         leftStorage: room.leftStorage
     }
 
-    const kafkaRecord = {
+    const kafkaRecord: ProducerRecord = {
         topic: "update_files",
         messages: [{ value: JSON.stringify(updateFilesKafkaMessage) }]
     }
@@ -72,9 +72,9 @@ export default async function delete_file(message: KafkaMessage) {
     await kafkaProducer
         .send(kafkaRecord)
         .then(d => {
-            logger.info(`kafka producer success send\n${JSON.stringify(d, null, 4)}`);
+            logger.debug(`kafka producer success send\n${JSON.stringify(d, null, 4)}`);
         })
         .catch(e => {
-            logger.info(`kafka producer fail send\n${JSON.stringify(e, null, 4)}`);
+            logger.error(`kafka producer fail send\n${JSON.stringify(e, null, 4)}`);
         })
 }

@@ -2,7 +2,6 @@ import { Kafka, logLevel } from "kafkajs";
 import assert from "assert";
 import WinstonLogCreator from "@config/logger/kafka_logger";
 import logger from "@config/logger";
-import { RetryOptions } from "kafkajs";
 
 const KAFKA_BROKERS = process.env.KAFKA_BROKERS as string;
 const STORAGE_KAFKA_GROUP_ID = process.env.STORAGE_KAFKA_GROUP_ID as string;
@@ -16,12 +15,6 @@ const kafka = new Kafka({
     logCreator: WinstonLogCreator,
     logLevel: logLevel.DEBUG,
 });
-
-// const retryOptions: RetryOptions = {
-//     maxRetryTime: 1000,
-//     initialRetryTime: 1000,
-//     retries: 1,
-// }
 
 const kafkaProducer = kafka.producer();
 const kafkaConsumer = kafka.consumer({ groupId: STORAGE_KAFKA_GROUP_ID });
@@ -52,20 +45,33 @@ kafkaConsumer.subscribe({ topics: topics, fromBeginning: false })
         assert.fail('kafka consumer init connect error');
     })
 
-kafkaProducer.on(kafkaProducer.events.CONNECT, e => {
-    logger.info('kafka producer connect');    
+let producerConnectCount = 0;
+let producerDisconnectCount = 0;
+let consumerConnectCount = 0;
+let consumerDisconnectCount = 0;
+
+kafkaProducer.on(kafkaProducer.events.CONNECT, (e) => {
+    producerConnectCount++;
+    if (producerConnectCount > 1){
+        logger.info(`kafka producer connect ${producerConnectCount}`);    
+    }    
 });
 
-kafkaProducer.on(kafkaProducer.events.DISCONNECT, e => {
-    logger.error('kafka producer disconnect');    
+kafkaProducer.on(kafkaProducer.events.DISCONNECT, e => {    
+    producerDisconnectCount++;
+    logger.error(`kafka producer disconnect ${producerDisconnectCount}`);    
 });
 
 kafkaConsumer.on(kafkaConsumer.events.CONNECT, e => {
-    logger.info('kafka consumer connect');    
+    consumerConnectCount++;
+    if (consumerConnectCount > 1){
+        logger.info(`kafka consumer connect ${consumerConnectCount}`);    
+    }
 });
 
-kafkaConsumer.on(kafkaConsumer.events.DISCONNECT, e => {
-    logger.error('kafka consumer disconnect');
+kafkaConsumer.on(kafkaConsumer.events.DISCONNECT, e => {  
+    consumerDisconnectCount++; 
+    logger.error(`kafka consumer disconnect ${consumerDisconnectCount}`);
 });
 
 export { kafkaProducer, kafkaConsumer };

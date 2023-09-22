@@ -34,9 +34,10 @@ const FileDeleteButton = styled.span`
     }
 `
 
-function RoomComponent(props: {ws: WebSocket}) {
+function RoomComponent(props: {ws: WebSocket | null; clientId: string; }) {
     const navigate = useNavigate();
     const ws = props.ws;
+    const clientId = props.clientId;
     interface iRoomInfo {
         send: boolean;
         text: {
@@ -44,8 +45,7 @@ function RoomComponent(props: {ws: WebSocket}) {
             value: String;
         };
         files: String[];
-        roomId: String;
-        session: String;
+        roomId: String;        
     }
     const roomInfo = useRef<iRoomInfo>({
         send: false,
@@ -54,32 +54,27 @@ function RoomComponent(props: {ws: WebSocket}) {
             value: "",
         },
         files: [],
-        roomId: "",
-        session: "",
+        roomId: "",        
     });
     let expireTime = useRef<any>({
         time: Number
-    });
-
+    });    
     const [textValue, setTextValue] = useState<string>("");
     const [roomId, setRoomId] = useState<string>("");
     const [leftStorage, setLeftStorage] = useState(10_000_000);
     const [leftTime, setLeftTime] = useState(0);
-    const [session, setSession] = useState<string>("");
     const [files, setFiles] = useState<string[]>([]);
     const [uploadFiles, setUploadFiles] = useState<string[]>([]);
     const [uploadProgress, setUploadProgress] = useState<{[file: string]: number}>({});
-    console.log(expireTime);
 
     useEffect(() => {
         const pathRoomId = window.location.pathname.replace("/room/", "");
-        fetch(`/joinroom?roomId=${pathRoomId}`, {method: "POST"})
+        fetch(`/joinroom?roomId=${pathRoomId}&clientId=${clientId}`, {method: "POST"})
             .then((d) => d.json())
             .then((d) => {
                 if (d.error == 0) {
                     setTextValue(d.text.value);
-                    setRoomId(d.roomId);
-                    setSession(d.session);
+                    setRoomId(d.roomId);                    
                     setFiles(d.files);
                     setLeftStorage(d.leftStorage);
                     console.log(d.expireTime);
@@ -87,8 +82,7 @@ function RoomComponent(props: {ws: WebSocket}) {
                     const t = new Date(d.expireTime).getTime();
                     expireTime.current.time = t;
                     setLeftTime(expireTime.current.time - new Date().getTime());
-                    roomInfo.current.text = d.text;
-                    roomInfo.current.session = d.session;
+                    roomInfo.current.text = d.text;                    
                     roomInfo.current.roomId = d.roomId;
                     roomInfo.current.files = d.files;
                 } else {
@@ -101,14 +95,14 @@ function RoomComponent(props: {ws: WebSocket}) {
             const heartbeat = {
                 type: "heartbeat",
             };
-            ws.send(JSON.stringify(heartbeat));
+            ws?.send(JSON.stringify(heartbeat));
         }, 1000 * 10);
 
         setInterval(() => {
             const leftTime = expireTime.current.time - new Date().getTime();
             setLeftTime(leftTime);
             if (leftTime > 0 && roomInfo.current.send && roomInfo.current.roomId != "") {
-                ws.send(
+                ws?.send(
                     JSON.stringify({
                         type: "text",
                         roomId: roomInfo.current.roomId,
@@ -119,29 +113,33 @@ function RoomComponent(props: {ws: WebSocket}) {
                 roomInfo.current.send = false;
             }
         }, 1000);
-
-        ws.onmessage = (evt) => {
-            const msg = JSON.parse(evt.data);
-            switch (msg.type) {
-                case "text":
-                    setTextValue(msg.msg);
-                    roomInfo.current.text.value = msg.msg;
-                    break;
-                case "file":
-                    setFiles(msg.fileIds);
-                    setLeftStorage(msg.leftStorage);
-                    setUploadFiles((oldArr) => {
-                        const tmp = new Set(oldArr);
-                        for (const file of msg.fileIds) {
-                            tmp.delete(file);
-                        }
-                        const newArr = Array.from(tmp);
-                        return newArr;
-                    });
-                    roomInfo.current.files = msg.fileIds;
-                    break;
-            }
-        };
+        try{
+            ws!.onmessage = (evt) => {
+                const msg = JSON.parse(evt.data);
+                switch (msg.type) {                
+                    case "text":
+                        setTextValue(msg.msg);
+                        roomInfo.current.text.value = msg.msg;
+                        break;
+                    case "file":
+                        setFiles(msg.fileIds);
+                        setLeftStorage(msg.leftStorage);
+                        setUploadFiles((oldArr) => {
+                            const tmp = new Set(oldArr);
+                            for (const file of msg.fileIds) {
+                                tmp.delete(file);
+                            }
+                            const newArr = Array.from(tmp);
+                            return newArr;
+                        });
+                        roomInfo.current.files = msg.fileIds;
+                        break;
+                }
+            };   
+        } catch (e){
+            console.error(e);
+        }
+          
     }, []);
 
     function textHandler(e: React.ChangeEvent<HTMLTextAreaElement>) {
