@@ -10,7 +10,6 @@ export default async function createRoom(call: ServerUnaryCall<CreateRoomRequest
         const id = call.request.getId();
         const clientId = call.request.getClientid();
         const expireTime = call.request.getExpiretime();
-        const num = call.request.getNum();
 
         logger.debug(`gRPC Room.CreateRoom receive data\n${JSON.stringify(call.request.toObject(), null, 4)}`);
         const roomId = Math.round(Math.random() * 10000)

@@ -8,7 +8,7 @@
 **/build
 **/.kafkaconfig.yaml
 **/clears3.js
-.vscode
+**/.vscode
 **/.env
 **/.*
 

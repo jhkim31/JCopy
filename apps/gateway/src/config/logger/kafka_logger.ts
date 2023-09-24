@@ -33,7 +33,7 @@ const levelColors = {
 
 const transport: DailyRotateFile = new DailyRotateFile({
     filename: '%DATE%.log',
-    datePattern: 'YYYY-MM-DDTHH',
+    datePattern: 'YYYY-MM-DD',
     dirname: path.resolve(logDir, "kafka"),    
     frequency: "1m",
     zippedArchive: true,

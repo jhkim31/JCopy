@@ -8,11 +8,8 @@ import logger from "@config/logger";
 import Express from "@config/express";
 import { Request } from "express";
 import wss from "@config/ws";
-import {v4 as uuid} from "uuid";
-import WebSocket from "ws";
 import wsConnectionHandler from "./ws/wsConnectionHandler";
 import ErrorHandler from "./express/handler/ErrorHandler";
-import { wsClients } from "@config/ws";
 import * as handler from "@express/handler";
 
 const EXPRESS_PORT = process.env.EXPRESS_PORT as string;
@@ -32,8 +29,8 @@ Express.get("*", handler.defaultHandler);
 
 Express.post("/room", handler.postRoomHandler);
 Express.post('/joinroom', handler.postJoinRoomHandler);
-
-
+Express.put("/upload", handler.uploadHandler);
+Express.delete("/file", handler.deleteFileHandler);
 
 Express.use(ErrorHandler);
 

@@ -5,8 +5,12 @@ import DailyRotateFile from 'winston-daily-rotate-file';
 const format = winston.format;
 const { timestamp, colorize, printf } = winston.format;
 
-const logDir = process.env.ROOM_LOGDIR as string;
-assert.strictEqual(typeof logDir, "string", "ROOM_LOGDIR이 선언되지 않았습니다.");
+const ROOM_LOGDIR = process.env.ROOM_LOGDIR as string;
+assert.strictEqual(typeof ROOM_LOGDIR, "string", "ROOM_LOGDIR이 선언되지 않았습니다.");
+const ROOM_LOG_CONSOLE_LEVEL = process.env.GATEWAY_LOG_CONSOLE_LEVEL as string;
+assert.strictEqual(typeof ROOM_LOG_CONSOLE_LEVEL, "string", "ROOM_LOG_CONSOLE_LEVEL 가 선언되지 않았습니다.");
+const ROOM_LOG_FILE_LEVEL = process.env.GATEWAY_LOG_FILE_LEVEL as string;
+assert.strictEqual(typeof ROOM_LOG_FILE_LEVEL, "string", "ROOM_LOG_FILE_LEVEL 가 선언되지 않았습니다.");
 
 const levelColors = {
     trace: 'grey',
@@ -34,9 +38,9 @@ const logFormat = format.combine(
 
 const transport: DailyRotateFile = new DailyRotateFile({
     filename: '%DATE%.log',
-    datePattern: 'YYYY-MM-DDTHH',
-    dirname: logDir,
-    level: "trace",
+    datePattern: 'YYYY-MM-DD',
+    dirname: ROOM_LOGDIR,
+    level: ROOM_LOG_FILE_LEVEL,
     frequency: "1m",
     zippedArchive: true,
     maxSize: '20m',
@@ -50,14 +54,13 @@ interface CustomLogger extends winston.Logger {
     trace: winston.LeveledLogMethod;
 }
 
-const logger: CustomLogger = <CustomLogger>winston.createLogger({
-    level: "trace",
+const logger: CustomLogger = <CustomLogger>winston.createLogger({    
     levels: CustomLevel,        
     format: logFormat,
     transports: [
         transport,
         new winston.transports.Console({
-            level: "info",
+            level: ROOM_LOG_CONSOLE_LEVEL
         }),
     ],
 });
@@ -67,6 +70,6 @@ logger.debug("debug");
 logger.info("info");
 logger.warn("warn");
 logger.error("error");
-logger.info(`log path : ${logDir}`);
+logger.info(`log path : ${ROOM_LOGDIR}`);
 
 export default logger;

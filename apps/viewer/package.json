@@ -23,7 +23,7 @@
   "scripts": {
     "start": "react-scripts start",
     "build": "react-scripts build && mv ./build/index.html ./build/index2.html &&  rm -rf ../gateway/build && cp -r ./build ../gateway/build",
-    "test": "react-scripts test",
+    "product": "GENERATE_SOURCEMAP=false react-scripts build && mv ./build/index.html ./build/index2.html &&  rm -rf ../gateway/build && cp -r ./build ../gateway/build",
     "eject": "react-scripts eject"
   },
   "eslintConfig": {

@@ -1,7 +1,7 @@
-import {useNavigate} from "react-router-dom";
-import React, {useEffect, useState, useRef} from "react";
+import { useNavigate } from "react-router-dom";
+import React, { useEffect, useState, useRef } from "react";
 import styled from "styled-components";
-import {FileUploader} from "react-drag-drop-files";
+import { FileUploader } from "react-drag-drop-files";
 
 const Room = styled.div`
     display: flex;
@@ -34,7 +34,7 @@ const FileDeleteButton = styled.span`
     }
 `
 
-function RoomComponent(props: {ws: WebSocket | null; clientId: string; }) {
+function RoomComponent(props: { ws: WebSocket | null; clientId: string; }) {
     const navigate = useNavigate();
     const ws = props.ws;
     const clientId = props.clientId;
@@ -45,7 +45,7 @@ function RoomComponent(props: {ws: WebSocket | null; clientId: string; }) {
             value: String;
         };
         files: String[];
-        roomId: String;        
+        roomId: String;
     }
     const roomInfo = useRef<iRoomInfo>({
         send: false,
@@ -54,27 +54,27 @@ function RoomComponent(props: {ws: WebSocket | null; clientId: string; }) {
             value: "",
         },
         files: [],
-        roomId: "",        
+        roomId: "",
     });
     let expireTime = useRef<any>({
         time: Number
-    });    
+    });
     const [textValue, setTextValue] = useState<string>("");
     const [roomId, setRoomId] = useState<string>("");
     const [leftStorage, setLeftStorage] = useState(10_000_000);
     const [leftTime, setLeftTime] = useState(0);
     const [files, setFiles] = useState<string[]>([]);
     const [uploadFiles, setUploadFiles] = useState<string[]>([]);
-    const [uploadProgress, setUploadProgress] = useState<{[file: string]: number}>({});
+    const [uploadProgress, setUploadProgress] = useState<{ [file: string]: number }>({});
 
     useEffect(() => {
         const pathRoomId = window.location.pathname.replace("/room/", "");
-        fetch(`/joinroom?roomId=${pathRoomId}&clientId=${clientId}`, {method: "POST"})
+        fetch(`/joinroom?roomId=${pathRoomId}&clientId=${clientId}`, { method: "POST" })
             .then((d) => d.json())
             .then((d) => {
                 if (d.error == 0) {
                     setTextValue(d.text.value);
-                    setRoomId(d.roomId);                    
+                    setRoomId(d.roomId);
                     setFiles(d.files);
                     setLeftStorage(d.leftStorage);
                     console.log(d.expireTime);
@@ -82,7 +82,7 @@ function RoomComponent(props: {ws: WebSocket | null; clientId: string; }) {
                     const t = new Date(d.expireTime).getTime();
                     expireTime.current.time = t;
                     setLeftTime(expireTime.current.time - new Date().getTime());
-                    roomInfo.current.text = d.text;                    
+                    roomInfo.current.text = d.text;
                     roomInfo.current.roomId = d.roomId;
                     roomInfo.current.files = d.files;
                 } else {
@@ -90,13 +90,6 @@ function RoomComponent(props: {ws: WebSocket | null; clientId: string; }) {
                     return navigate("/home");
                 }
             });
-
-        setInterval(() => {
-            const heartbeat = {
-                type: "heartbeat",
-            };
-            ws?.send(JSON.stringify(heartbeat));
-        }, 1000 * 10);
 
         setInterval(() => {
             const leftTime = expireTime.current.time - new Date().getTime();
@@ -112,11 +105,15 @@ function RoomComponent(props: {ws: WebSocket | null; clientId: string; }) {
                 );
                 roomInfo.current.send = false;
             }
+            if (leftTime < 0) {
+                alert("제한시간이 만료되었습니다.");
+                window.location.href = "/home";
+            }
         }, 1000);
-        try{
+        try {
             ws!.onmessage = (evt) => {
                 const msg = JSON.parse(evt.data);
-                switch (msg.type) {                
+                switch (msg.type) {
                     case "text":
                         setTextValue(msg.msg);
                         roomInfo.current.text.value = msg.msg;
@@ -135,28 +132,22 @@ function RoomComponent(props: {ws: WebSocket | null; clientId: string; }) {
                         roomInfo.current.files = msg.fileIds;
                         break;
                 }
-            };   
-        } catch (e){
+            };
+        } catch (e) {
             console.error(e);
         }
-          
+
     }, []);
 
     function textHandler(e: React.ChangeEvent<HTMLTextAreaElement>) {
-        if (leftTime <= 0){
-            alert("남은 시간이 없습니다. 방을 다시 생성하세요");
-        } else {
-            setTextValue(e.target.value);
-            roomInfo.current.text.value = e.target.value;
-            roomInfo.current.send = true;
-        }
+        setTextValue(e.target.value);
+        roomInfo.current.text.value = e.target.value;
+        roomInfo.current.send = true;
+
     }
 
     const handleChange = async (file: File) => {
-        if (leftTime <= 0){
-            alert("남은 시간이 없습니다. 방을 다시 생성하세요");
-        } else {
-            fetch(`/uploadable?roomId=${roomId}&size=${file.size}`)
+        fetch(`/uploadable?roomId=${roomId}&size=${file.size}`)
             .then((d) => d.json())
             .then((d) => {
                 if (d.res == 1) {
@@ -188,7 +179,7 @@ function RoomComponent(props: {ws: WebSocket | null; clientId: string; }) {
                             var percentComplete = Math.floor((e.loaded / e.total) * 100);
                             console.log(percentComplete);
                             setUploadProgress((prev) => {
-                                const newJson = {...prev};
+                                const newJson = { ...prev };
                                 newJson[file.name] = percentComplete;
                                 return newJson;
                             });
@@ -199,7 +190,7 @@ function RoomComponent(props: {ws: WebSocket | null; clientId: string; }) {
 
                     xhr.send(form);
                     setUploadProgress((prev) => {
-                        const newJson = {...prev};
+                        const newJson = { ...prev };
                         newJson[file.name] = 0;
                         return newJson;
                     });
@@ -207,7 +198,7 @@ function RoomComponent(props: {ws: WebSocket | null; clientId: string; }) {
                     alert(d.msg);
                 }
             });
-        }
+
     };
 
     function deleteFile(filename: String) {
@@ -224,7 +215,7 @@ function RoomComponent(props: {ws: WebSocket | null; clientId: string; }) {
                     alert("공유 URL이 복사되었습니다!");
                 }}>{roomId}</span></div>
                 <div>남은 용량 : {(leftStorage / 1_000_000).toFixed(1)}MB</div>
-                <div>남은 시간 : {(leftTime / 1000) > 60 ? Math.floor((leftTime / 1000) / 60) + "분 ": ""}{leftTime > 0 ? Math.round(leftTime / 1000) % 60 : 0}초</div>
+                <div>남은 시간 : {(leftTime / 1000) > 60 ? Math.floor((leftTime / 1000) / 60) + "분 " : ""}{leftTime > 0 ? Math.round(leftTime / 1000) % 60 : 0}초</div>
             </RoomID>
             <TextField placeholder="공유할 텍스트를 입력하세요" onChange={textHandler} value={textValue} />
             <div id="fileList">
@@ -241,7 +232,7 @@ function RoomComponent(props: {ws: WebSocket | null; clientId: string; }) {
                 <hr />
                 <div>공유됨</div>
                 {files.map((item) => {
-                    const url = `https://jcopy-storage.s3.ap-northeast-2.amazonaws.com/${roomId}/${item}`;
+                    const url = `https://jcopy-bucket.s3.ap-northeast-2.amazonaws.com/${roomId}/${item}`;
                     return (
                         <FileRow>
                             <FileDeleteButton onClick={() => deleteFile(item)} >x </FileDeleteButton>
