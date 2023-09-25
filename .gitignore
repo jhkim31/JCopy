@@ -7,9 +7,10 @@
 **/s3.json
 **/build
 **/.kafkaconfig.yaml
-
-.vscode
-
+**/clears3.js
+**/.vscode
+**/.env
+**/.*
 
 ### macOS ###
 # General

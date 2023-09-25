@@ -5,7 +5,7 @@ common:
     bucket: jcopy-storage
 develop:
   redis:
-    host: 192.168.150.47
+    host: 192.168.0.200
     port: 6379
   mongodb:
     user: test
