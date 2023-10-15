@@ -1,0 +1,64 @@
+name: ALL Container Deploy Hub
+
+on:
+  push:
+    branches:
+      - master
+jobs:
+  build-test:
+    runs-on: ubuntu-latest
+    env:
+      CI: false
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+
+      - name: react build setup
+        uses: actions/setup-node@v3
+        with:
+          node-version: 18
+          cache: 'npm'
+          cache-dependency-path: ./package-lock.json
+
+      - name: npm install
+        working-directory: .
+        run: npm ci
+
+      - name: npm run product
+        working-directory: ./apps/viewer
+        run: npm run product
+
+      - name: create .env
+        run : |
+          echo "${{secrets.DOTENV}}" > .env
+
+      - name: Login to Dockerhub
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.ap-northeast-2.amazonaws.com
+          username: ${{ secrets.AWS_ECR_ACCESS_KEY_ID }}
+          password: ${{ secrets.AWS_ECR_SECRET_ACCESS_KEY }}
+
+      - name: gateway build
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: ./apps/gateway/Dockerfile
+          tags: 390629362093.dkr.ecr.ap-northeast-2.amazonaws.com/jcopy/gateway:${{ vars.VERSION }}
+          push: true
+
+      - name: room build
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: ./apps/room/Dockerfile
+          tags: 390629362093.dkr.ecr.ap-northeast-2.amazonaws.com/jcopy/room:${{ vars.VERSION }}
+          push: true
+
+      - name: storage build
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: ./apps/storage/Dockerfile
+          tags: 390629362093.dkr.ecr.ap-northeast-2.amazonaws.com/jcopy/storage:${{ vars.VERSION }}
+          push: true
