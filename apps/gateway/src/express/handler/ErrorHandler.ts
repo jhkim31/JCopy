@@ -1,7 +1,7 @@
 import path from "path";
 import { NextFunction, Request, Response } from "express";
 import logger from "@config/logger";
-import { GetLeftStorageRequest } from "jcopy-shared/proto/jcopy_pb";
+import { GetLeftStorageRequest } from "shared/proto/jcopy_pb";
 import {v4 as uuid} from "uuid";
 
 const staticPath = (relative_path: string) => path.resolve(process.cwd(), relative_path);

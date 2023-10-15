@@ -3,7 +3,7 @@ import { v4 as uuid } from "uuid";
 import { kafkaProducer } from "@config/kafka";
 import { ProducerRecord } from "kafkajs";
 import logger from "@config/logger";
-import IChangeText from "jcopy-shared/interface/kafka/IChangeText";
+import IChangeText from "shared/interface/kafka/IChangeText";
 
 export default async function onMessageHandler(ws: WebSocket, clientId: string, message: WebSocket.RawData) {
     try {

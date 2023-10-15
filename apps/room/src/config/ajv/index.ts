@@ -1,7 +1,7 @@
 import Ajv from "ajv";
 
-import UploadFileSchema from "jcopy-shared/schema/kafka/UploadFileSchema";
-import DeleteFileSchema from "jcopy-shared/schema/kafka/DeleteFileSchema";
+import UploadFileSchema from "shared/schema/kafka/UploadFileSchema";
+import DeleteFileSchema from "shared/schema/kafka/DeleteFileSchema";
 
 const ajv = new Ajv();
 

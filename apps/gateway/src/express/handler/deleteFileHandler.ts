@@ -5,7 +5,7 @@ import assert from "assert";
 import { kafkaProducer } from "@config/kafka";
 import s3Client from "@config/aws/s3";
 import * as aws from "@aws-sdk/client-s3";
-import IDeleteFile from "jcopy-shared/interface/kafka/IDeleteFile";
+import IDeleteFile from "shared/interface/kafka/IDeleteFile";
 
 const AWS_S3_BUCKET_NAME = process.env.AWS_S3_BUCKET_NAME as string;
 assert.strictEqual(typeof AWS_S3_BUCKET_NAME, "string", `AWS_S3_BUCKET_NAME 가 선언되지 않았습니다.`);

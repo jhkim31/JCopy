@@ -1,8 +1,9 @@
 import * as grpc from "@grpc/grpc-js";
 import assert from "assert";
 
-import { StorageClient } from "jcopy-shared/proto/jcopy_grpc_pb";
-import {credentials} from "jcopy-shared/node_modules/@grpc/grpc-js";
+import { StorageClient } from "shared/proto/jcopy_grpc_pb";
+
+
 
 const GRPC_STORAGE_HOST = process.env.GRPC_STORAGE_HOST;
 const GRPC_STORAGE_PORT = process.env.GRPC_STORAGE_PORT;
@@ -18,6 +19,6 @@ const options = {
 };
 
 const grpcServer = new grpc.Server(options);
-const grpcStorageClient = new StorageClient(`${GRPC_STORAGE_HOST}:${GRPC_STORAGE_PORT}`, credentials.createInsecure());
+const grpcStorageClient = new StorageClient(`${GRPC_STORAGE_HOST}:${GRPC_STORAGE_PORT}`, grpc.credentials.createInsecure());
 
 export {grpcServer, grpcStorageClient};

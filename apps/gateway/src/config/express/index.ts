@@ -3,7 +3,7 @@ import cookieParser from "cookie-parser";
 import session from "express-session";
 import cors from "cors";
 import path from "path";
-import connectRedis from "connect-redis";
+import RedisStore from "connect-redis";
 import redisClient from "@config/redis";
 import assert from "assert";
 import logger from "@config/logger";
@@ -18,7 +18,6 @@ const cookie_maxage = parseInt(EXPRESS_SESSION_COOKIE_MAXAGE);
 assert.strictEqual(isNaN(cookie_maxage), false, `EXPRESS_SESSION_COOKIE_MAXAGE 가 Integer값이 아닙니다.`);
 
 const staticPath = (relative_path: string) => path.resolve(process.cwd(), relative_path);
-const RedisStore = connectRedis(session);
 const Express = express();
 
 Express.use(cors());

@@ -1,10 +1,10 @@
 import { KafkaMessage, ProducerRecord } from "kafkajs";
 import ajv from "@config/ajv";
 import { v4 as uuid } from "uuid";
-import parseKafkaMessage from "jcopy-shared/lib/parseKafkaMessage";
+import parseKafkaMessage from "shared/lib/parseKafkaMessage";
 import logger from "@config/logger";
-import ITextChanged from "jcopy-shared/interface/kafka/ITextChanged";
-import { GetJoinedClientIdsRequest, GetJoinedClientIdsResponse } from "jcopy-shared/proto/jcopy_pb";
+import ITextChanged from "shared/interface/kafka/ITextChanged";
+import { GetJoinedClientIdsRequest, GetJoinedClientIdsResponse } from "shared/proto/jcopy_pb";
 import { grpcRoomClient } from "@config/grpc";
 import { wsClients } from "@config/ws";
 import WebSocket from "ws";

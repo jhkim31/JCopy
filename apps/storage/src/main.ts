@@ -1,5 +1,12 @@
+import staticPath from "shared/lib/staticPath"
 import dotenv from "dotenv";
-dotenv.config();
+if (process.env.NODE_ENV == "production") {
+    dotenv.config();
+} else if (process.env.NODE_ENV == "development") {
+    dotenv.config({path: staticPath("../../.env")});
+} else {
+    dotenv.config();
+}
 
 import assert from "assert";
 import * as grpc from "@grpc/grpc-js";
@@ -9,7 +16,7 @@ import { kafkaConsumer } from "@config/kafka";
 import eachMessageHandler from "@kafka/eachMessageHandler";
 import logger from "@config/logger";
 import { createText, getFiles, getText } from "@grpc";
-import { StorageService } from "jcopy-shared/proto/jcopy_grpc_pb";
+import { StorageService } from "shared/proto/jcopy_grpc_pb";
 
 const GRPC_STORAGE_PORT = process.env.GRPC_STORAGE_PORT;
 

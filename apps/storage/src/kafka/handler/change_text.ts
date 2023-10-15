@@ -1,9 +1,9 @@
 import { KafkaMessage } from "kafkajs";
 import ajv from "@config/ajv";
-import IChangeText from "jcopy-shared/interface/kafka/IChangeText";
-import parseKafkaMessage from "jcopy-shared/lib/parseKafkaMessage";
+import IChangeText from "shared/interface/kafka/IChangeText";
+import parseKafkaMessage from "shared/lib/parseKafkaMessage";
 import redisClient from "@config/redis";
-import ITextChanged from "jcopy-shared/interface/kafka/ITextChanged";
+import ITextChanged from "shared/interface/kafka/ITextChanged";
 import { kafkaProducer } from "@config/kafka";
 import logger from "@config/logger";
 

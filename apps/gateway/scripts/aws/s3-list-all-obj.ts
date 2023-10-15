@@ -9,7 +9,7 @@ const params = {
     Bucket: "jcopy-bucket",
 }
 
-const lcommand = new aws.ListObjectsCommand(params);
+const lcommand: aws.ListObjectsCommand = new aws.ListObjectsCommand(params);
 s3Client.send(lcommand)
     .then(d => {
         console.log("current");

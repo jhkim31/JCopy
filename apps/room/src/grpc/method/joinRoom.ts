@@ -1,5 +1,5 @@
 import { ServerUnaryCall, sendUnaryData } from "@grpc/grpc-js";
-import { JoinRoomRequest, JoinRoomResponse } from "jcopy-shared/proto/jcopy_pb";
+import { JoinRoomRequest, JoinRoomResponse } from "shared/proto/jcopy_pb";
 import { Room } from "@config/mongo";
 import logger from "@config/logger";
 

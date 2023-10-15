@@ -1,5 +1,5 @@
 import { NextFunction, Request, Response } from "express";
-import { GetFilesRequest, GetFilesResponse, JoinRoomRequest, JoinRoomResponse } from "jcopy-shared/proto/jcopy_pb";
+import { GetFilesRequest, GetFilesResponse, JoinRoomRequest, JoinRoomResponse } from "shared/proto/jcopy_pb";
 import { v4 as uuid } from "uuid";
 import { grpcRoomClient, grpcStorageClient } from "@config/grpc";
 

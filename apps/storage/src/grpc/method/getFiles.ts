@@ -1,5 +1,5 @@
 import {ServerUnaryCall, sendUnaryData} from "@grpc/grpc-js";
-import { GetFilesRequest, GetFilesResponse } from "jcopy-shared/proto/jcopy_pb";
+import { GetFilesRequest, GetFilesResponse } from "shared/proto/jcopy_pb";
 import redisClient from "@config/redis";
 import logger from "@config/logger";
 

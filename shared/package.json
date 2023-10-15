@@ -1,11 +1,11 @@
 {
   "dependencies": {
-    "@grpc/grpc-js": "^1.9.3",
+    "@grpc/grpc-js": "^1.9.5",
     "ajv": "^8.12.0",
     "google-protobuf": "^3.21.2",
     "kafkajs": "^2.2.4"
   },
-  "name": "jcopy-shared",
+  "name": "shared",
   "version": "1.0.0",
   "main": "index.js",
   "directories": {

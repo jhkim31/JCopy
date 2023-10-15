@@ -1,6 +1,6 @@
 import { Request, Response } from "express";
 import logger from "@config/logger";
-import { GetLeftStorageRequest, GetLeftStorageResponse, GetTextRequest, GetTextResponse } from "jcopy-shared/proto/jcopy_pb";
+import { GetLeftStorageRequest, GetLeftStorageResponse, GetTextRequest, GetTextResponse } from "shared/proto/jcopy_pb";
 import {v4 as uuid} from "uuid";
 import { grpcRoomClient, grpcStorageClient } from "@config/grpc";
 

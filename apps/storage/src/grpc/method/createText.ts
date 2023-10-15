@@ -1,5 +1,5 @@
 import {ServerUnaryCall, sendUnaryData} from "@grpc/grpc-js";
-import { CreateTextRequest, CreateTextResponse } from "jcopy-shared/proto/jcopy_pb";
+import { CreateTextRequest, CreateTextResponse } from "shared/proto/jcopy_pb";
 import { v4 as uuid } from "uuid";
 import redisClient from "@config/redis";
 import logger from "@config/logger";

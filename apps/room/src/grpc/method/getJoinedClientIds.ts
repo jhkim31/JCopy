@@ -1,5 +1,5 @@
 import * as grpc from "@grpc/grpc-js";
-import { GetJoinedClientIdsRequest, GetJoinedClientIdsResponse } from "jcopy-shared/proto/jcopy_pb";
+import { GetJoinedClientIdsRequest, GetJoinedClientIdsResponse } from "shared/proto/jcopy_pb";
 import logger from "@config/logger";
 import { Room } from "@config/mongo";
 

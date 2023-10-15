@@ -1,5 +1,12 @@
+import staticPath from "shared/lib/staticPath"
 import dotenv from "dotenv";
-dotenv.config();
+if (process.env.NODE_ENV == "production") {
+    dotenv.config();
+} else if (process.env.NODE_ENV == "development") {
+    dotenv.config({path: staticPath("../../.env")});
+} else {
+    dotenv.config();
+}
 
 import assert from "assert";
 import { kafkaConsumer } from "@config/kafka";

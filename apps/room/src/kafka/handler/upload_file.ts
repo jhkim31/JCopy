@@ -1,9 +1,9 @@
 import { KafkaMessage } from "kafkajs";
 import ajv from "@config/ajv";
 import { v4 as uuid } from "uuid";
-import IUploadFile from "jcopy-shared/interface/kafka/IUploadFile";
-import IUpdateFiles from "jcopy-shared/interface/kafka/IUpdateFiles";
-import parseKafkaMessage from "jcopy-shared/lib/parseKafkaMessage";
+import IUploadFile from "shared/interface/kafka/IUploadFile";
+import IUpdateFiles from "shared/interface/kafka/IUpdateFiles";
+import parseKafkaMessage from "shared/lib/parseKafkaMessage";
 import { kafkaProducer } from "@config/kafka";
 import logger from "@config/logger";
 import { Room } from "@config/mongo";

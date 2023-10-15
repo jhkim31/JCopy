@@ -1,11 +1,11 @@
 import { NextFunction, Request, Response } from "express";
 import logger from "@config/logger";
-import { CreateRoomRequest, CreateRoomResponse, GetLeftStorageRequest, GetLeftStorageResponse, GetTextRequest, GetTextResponse } from "jcopy-shared/proto/jcopy_pb";
+import { CreateRoomRequest, CreateRoomResponse, GetLeftStorageRequest, GetLeftStorageResponse, GetTextRequest, GetTextResponse } from "shared/proto/jcopy_pb";
 import { v4 as uuid } from "uuid";
 import { grpcRoomClient, grpcStorageClient } from "@config/grpc";
 import assert from "assert";
 import upload from "@config/express/multer";
-import IUploadFile from "jcopy-shared/interface/kafka/IUploadFile";
+import IUploadFile from "shared/interface/kafka/IUploadFile";
 import { kafkaProducer } from "@config/kafka";
 
 export default async function uploadHandler(req: Request, res: Response, next: NextFunction) {

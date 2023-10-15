@@ -1,5 +1,12 @@
+import staticPath from "shared/lib/staticPath"
 import dotenv from "dotenv";
-dotenv.config();
+if (process.env.NODE_ENV == "production") {
+    dotenv.config();
+} else if (process.env.NODE_ENV == "development") {
+    dotenv.config({path: staticPath("../../.env")});
+} else {
+    dotenv.config();
+}
 
 import assert from "assert";
 import {grpcServer} from "@config/grpc";
@@ -8,7 +15,7 @@ import { kafkaConsumer } from "@config/kafka";
 import eachMessageHandler from "@kafka/eachMessageHandler";
 import logger from "@config/logger";
 import { createRoom, joinRoom, getLeftStorage, getJoinedClientIds } from "@grpc";
-import { RoomService} from "jcopy-shared/proto/jcopy_grpc_pb";
+import { RoomService} from "shared/proto/jcopy_grpc_pb";
 
 const GRPC_ROOM_PORT = process.env.GRPC_ROOM_PORT;
 

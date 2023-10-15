@@ -11,7 +11,7 @@ assert.strictEqual(typeof REDIS_PORT, "string", `REDIS_PORT 가 선언되지 않
 assert.strictEqual(typeof REDIS_PASSWORD, "string", `REDIS_PASSWORD 가 선언되지 않았습니다.`);
 
 const url = `redis://:${REDIS_PASSWORD}@${REDIS_HOST}:${REDIS_PORT}`;
-const redisClient = createClient({ url, legacyMode: true });
+const redisClient = createClient({ url });
 redisClient.connect()
     .then(() => {
         logger.info(`redis init connect`);

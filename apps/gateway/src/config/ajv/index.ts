@@ -1,7 +1,7 @@
 import Ajv from "ajv";
 
-import TextChangedSchema from "jcopy-shared/schema/kafka/TextChangedSchema"; 
-import UpdateFilesSchema from "jcopy-shared/schema/kafka/UpdateFilesSchema"; 
+import TextChangedSchema from "shared/schema/kafka/TextChangedSchema"; 
+import UpdateFilesSchema from "shared/schema/kafka/UpdateFilesSchema"; 
 
 const ajv = new Ajv();
 

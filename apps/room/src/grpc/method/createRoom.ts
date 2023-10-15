@@ -1,5 +1,5 @@
 import { ServerUnaryCall, sendUnaryData, ServiceError } from "@grpc/grpc-js";
-import { CreateRoomRequest, CreateRoomResponse, CreateTextRequest, CreateTextResponse } from "jcopy-shared/proto/jcopy_pb";
+import { CreateRoomRequest, CreateRoomResponse, CreateTextRequest, CreateTextResponse } from "shared/proto/jcopy_pb";
 import { grpcStorageClient } from "@config/grpc";
 import { v4 as uuid } from "uuid";
 import logger from "@config/logger";
