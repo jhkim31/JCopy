@@ -32,18 +32,19 @@ function App() {
             newWs = new WebSocket(`wss://${window.location.host}/ws`);
         } else {
             newWs = new WebSocket(`ws://${window.location.host}/ws`);
-            newWs.onopen = (e) => {
-                console.log("open");
-            }
+        }
+        newWs.onopen = (e) => {
+            console.log("open");
+        }
 
-            newWs.onmessage = (e) => {
-                const msg = JSON.parse(e.data);
-                console.log(msg.clientId);
-                if (msg.type == "init") {
-                    setClientId(msg.clientId);
-                }
+        newWs.onmessage = (e) => {
+            const msg = JSON.parse(e.data);
+            console.log(msg.clientId);
+            if (msg.type == "init") {
+                setClientId(msg.clientId);
             }
         }
+
         setWs(newWs);
     }, [])
 

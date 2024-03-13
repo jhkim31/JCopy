@@ -20,7 +20,6 @@ const kafka = new Kafka({
 const kafkaProducer = kafka.producer();
 const kafkaConsumer = kafka.consumer({ groupId: GATEWAY_KAFKA_GROUP_ID });
 
-
 kafkaProducer.connect()
     .then(() => {
         logger.info('kafka producer init connect');

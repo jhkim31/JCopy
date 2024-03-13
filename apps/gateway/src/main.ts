@@ -45,7 +45,6 @@ const server = Express.listen(EXPRESS_PORT, () => {
     logger.info(`WAS Listen : ${EXPRESS_PORT}`);
 })
 
-
 wss.on('connection', wsConnectionHandler);
 
 server.on('upgrade', (req: Request, socket, head) => {     
